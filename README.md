@@ -1,2 +1,2 @@
-# zomato-weather-union-server
-Server code for the Weather Union (Zomato) project
+# zomato-weather-union
+Code for the Weather Union (Zomato) project
