@@ -19,9 +19,9 @@ type OpenWeatherAPIReponse struct {
 }
 
 type OpenWeatherCurrentWeatherData struct {
-	CurrentTime   int64                         `json:"dt"`
-	SunriseTime   int64                         `json:"sunrise"`
-	SunsetTime    int64                         `json:"sunset"`
+	TimeCurrent   int64                         `json:"dt"`
+	TimeSunrise   int64                         `json:"sunrise"`
+	TimeSunset    int64                         `json:"sunset"`
 	Temperature   float64                       `json:"temp"`
 	FeelsLike     float64                       `json:"feels_like"`
 	Pressure      float64                       `json:"pressure"`
