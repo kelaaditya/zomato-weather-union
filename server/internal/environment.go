@@ -31,7 +31,7 @@ func (appConfig *AppConfig) ENVInitialize() error {
 	// add them to the struct
 	envStruct.Port = os.Getenv("PORT")
 	envStruct.DatabaseURL = os.Getenv("DATABASE_URL")
-	envStruct.URLAPIWeatherUnion = os.Getenv("URL_API_WEATHER_UNION_LOCALITY")
+	envStruct.URLAPIWeatherUnion = os.Getenv("URL_API_WEATHER_UNION")
 	envStruct.URLAPIOpenWeatherMap = os.Getenv("URL_API_OPEN_WEATHER_MAP")
 	envStruct.APIKeyWeatherUnion = os.Getenv("API_KEY_WEATHER_UNION")
 	envStruct.APIKeyOpenWeatherMap = os.Getenv("API_KEY_OPEN_WEATHER_MAP")
