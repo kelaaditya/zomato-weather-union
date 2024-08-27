@@ -17,25 +17,24 @@ func main() {
 	// application config struct
 	var appConfig internal.AppConfig
 
-	// logger
-	appConfig.Logger = internal.CreateLogger()
+	// initialize logger
+	appConfig.LoggerInitialize()
 
-	// environment variables
-	appENVStruct, err := internal.CreateEnvironmentStruct()
+	// initialize environment variables
+	err := appConfig.ENVInitialize()
 	if err != nil {
 		appConfig.Logger.Error(err.Error())
 	}
-	appConfig.ENVVariables = appENVStruct
 
-	// create database pool and store into app config
-	appDBPool, err := internal.CreateDBPool(&appContext, appConfig.ENVVariables.DatabaseURL)
+	// initialize database connection pool
+	err = appConfig.DBPoolInitialize(appContext, appConfig.ENVVariables.DatabaseURL)
 	if err != nil {
 		appConfig.Logger.Error(err.Error())
 		// logger does not auto-exit
 		// manual call required
 		os.Exit(1)
 	}
-	appConfig.DBPool = appDBPool
+	defer appConfig.DBPoolClose()
 
 	// using the plain http mux
 	var mux *http.ServeMux = http.NewServeMux()

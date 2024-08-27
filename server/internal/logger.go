@@ -6,7 +6,7 @@ import (
 )
 
 // create logger at the app level
-func CreateLogger() *slog.Logger {
+func (appConfig *AppConfig) LoggerInitialize() {
 	// logger configuration options
 	loggerOptions := slog.HandlerOptions{
 		Level:     slog.LevelInfo,
@@ -19,5 +19,7 @@ func CreateLogger() *slog.Logger {
 	// create new logger from handler
 	logger := slog.New(loggerHandler)
 
-	return logger
+	// setting the config struct to carry the
+	// newly configured logger
+	appConfig.Logger = logger
 }

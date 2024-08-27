@@ -18,11 +18,11 @@ type AppENVVariables struct {
 
 // load environment variable values
 // from .env to a struct and then return
-func CreateEnvironmentStruct() (*AppENVVariables, error) {
+func (appConfig *AppConfig) ENVInitialize() error {
 	// load environment variables
 	err := godotenv.Load()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// struct for storing values
@@ -36,5 +36,10 @@ func CreateEnvironmentStruct() (*AppENVVariables, error) {
 	envStruct.APIKeyWeatherUnion = os.Getenv("API_KEY_WEATHER_UNION")
 	envStruct.APIKeyOpenWeatherMap = os.Getenv("API_KEY_OPEN_WEATHER_MAP")
 
-	return &envStruct, nil
+	// setting the config struct to carry the newly
+	// configured environment variables struct
+	appConfig.ENVVariables = &envStruct
+
+	// return nil if all okay
+	return nil
 }

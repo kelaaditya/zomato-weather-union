@@ -9,25 +9,32 @@ import (
 
 // create a database pool from context and database URL
 // and return a pointer to the pool
-func CreateDBPool(context *context.Context, databaseURL string) (*pgxpool.Pool, error) {
+func (appConfig *AppConfig) DBPoolInitialize(
+	context context.Context,
+	databaseURL string,
+) error {
 	// create new pool using the
 	// app context and the database URL
-	appDBPool, err := pgxpool.New(*context, databaseURL)
+	appDBPool, err := pgxpool.New(context, databaseURL)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// return pointer to created database pool
-	return appDBPool, nil
+	// setting the config struct to carry the
+	// newly configured database connection pool
+	appConfig.DBPool = appDBPool
+
+	// return nil if all okay
+	return nil
 }
 
 // ping database for connection check
-func AppDBPoolPing(context *context.Context, databasePool *pgxpool.Pool) error {
-	err := databasePool.Ping(*context)
+func (appConfig *AppConfig) DBPoolPing(context context.Context) error {
+	err := appConfig.DBPool.Ping(context)
 	return err
 }
 
 // function for closing the connection
-func AppDatabasePoolClose(databasePool *pgxpool.Pool) {
-	databasePool.Close()
+func (appConfig *AppConfig) DBPoolClose() {
+	appConfig.DBPool.Close()
 }
