@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
-	"log/slog"
-	"net/http"
 	"os"
-	"time"
 
 	"github.com/kelaaditya/zomato-weather-union/server/internal"
+	"github.com/kelaaditya/zomato-weather-union/server/internal/models"
 )
 
 func main() {
@@ -36,30 +34,10 @@ func main() {
 	}
 	defer appConfig.DBPoolClose()
 
-	// using the plain http mux
-	var mux *http.ServeMux = http.NewServeMux()
-
-	// get port environment variable
-	var portHTTP string = appConfig.ENVVariables.Port
-
-	// http server configuration
-	var server *http.Server = &http.Server{
-		Addr:         ":" + portHTTP,
-		Handler:      mux,
-		ErrorLog:     slog.NewLogLogger(appConfig.Logger.Handler(), slog.LevelError),
-		IdleTimeout:  time.Minute,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-	}
-	// print if PORT variable is defined
-	appConfig.Logger.Info("starting the http server", "port", portHTTP)
-
-	// create a http server
-	err = server.ListenAndServe()
-	if err != nil {
+	// do one pass through all weather stations
+	if err := models.GetAllCalculations(appContext, &appConfig); err != nil {
 		appConfig.Logger.Error(err.Error())
-		// logger does not auto-exit
-		// manual call required
+		// manual call exit
 		os.Exit(1)
 	}
 }
