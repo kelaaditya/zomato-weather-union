@@ -8,12 +8,12 @@ import (
 )
 
 type AppENVVariables struct {
-	Port                 string
-	DatabaseURL          string
-	URLAPIWeatherUnion   string
-	URLAPIOpenWeatherMap string
-	APIKeyWeatherUnion   string
-	APIKeyOpenWeatherMap string
+	Port                  string
+	DatabaseURL           string
+	URLBaseWeatherUnion   string
+	URLBaseOpenWeatherMap string
+	APIKeyWeatherUnion    string
+	APIKeyOpenWeatherMap  string
 }
 
 // load environment variable values
@@ -31,8 +31,8 @@ func (appConfig *AppConfig) ENVInitialize() error {
 	// add them to the struct
 	envStruct.Port = os.Getenv("PORT")
 	envStruct.DatabaseURL = os.Getenv("DATABASE_URL")
-	envStruct.URLAPIWeatherUnion = os.Getenv("URL_API_WEATHER_UNION")
-	envStruct.URLAPIOpenWeatherMap = os.Getenv("URL_API_OPEN_WEATHER_MAP")
+	envStruct.URLBaseWeatherUnion = os.Getenv("URL_BASE_WEATHER_UNION")
+	envStruct.URLBaseOpenWeatherMap = os.Getenv("URL_BASE_OPEN_WEATHER_MAP")
 	envStruct.APIKeyWeatherUnion = os.Getenv("API_KEY_WEATHER_UNION")
 	envStruct.APIKeyOpenWeatherMap = os.Getenv("API_KEY_OPEN_WEATHER_MAP")
 
