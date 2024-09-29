@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS measurements_open_weather_map(
     measurement_id UUID PRIMARY KEY NOT NULL,
+    weather_station_id UUID NOT NULL REFERENCES weather_union_stations(weather_station_id),
     run_id UUID NOT NULL REFERENCES measurement_runs(run_id),
     time_zone TEXT NOT NULL,
     time_zone_offset INTEGER NOT NULL,

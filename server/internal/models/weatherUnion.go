@@ -109,16 +109,16 @@ func SaveWeatherDataFromWeatherUnion(
 	ctx context.Context,
 	appConfig *internal.AppConfig,
 	measurementID uuid.UUID,
-	runID uuid.UUID,
 	weatherStationID uuid.UUID,
+	runID uuid.UUID,
 	data *WeatherUnionAPIReponseLocality,
 ) error {
 	// postgresql query string
 	var queryString string = `
 	INSERT INTO measurements_weather_union(
 		measurement_id,
-		run_id,
 		weather_station_id,
+		run_id,
 		message,
 		device_type,
 		temperature,
@@ -130,8 +130,8 @@ func SaveWeatherDataFromWeatherUnion(
 	)
 	VALUES (
 		@measurementID,
-		@runID,
 		@weatherStationID,
+		@runID,
 		@message,
 		@deviceType,
 		@temperature,
@@ -146,8 +146,8 @@ func SaveWeatherDataFromWeatherUnion(
 	// named arguments for building the query string
 	var queryArguments pgx.NamedArgs = pgx.NamedArgs{
 		"measurementID":    measurementID,
-		"runID":            runID,
 		"weatherStationID": weatherStationID,
+		"runID":            runID,
 		"message":          *data.Message,
 		"deviceType":       *data.DeviceType,
 		"temperature":      *data.LocalityWeatherData.Temperature,
@@ -161,7 +161,10 @@ func SaveWeatherDataFromWeatherUnion(
 	// executing the query string with the named arguments
 	_, err := appConfig.DBPool.Exec(ctx, queryString, queryArguments)
 	if err != nil {
-		return fmt.Errorf("error in inserting weather union data into postgresql: %w", err)
+		return fmt.Errorf(
+			"error in inserting weather union data into postgresql: %w",
+			err,
+		)
 	}
 
 	return nil

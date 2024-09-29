@@ -132,8 +132,8 @@ func GetOneUnitOfCalculation(
 		ctx,
 		appConfig,
 		measurementID,
-		runID,
 		station.WeatherStationID,
+		runID,
 		&dataWeatherUnion,
 	)
 	if err != nil {
@@ -147,6 +147,8 @@ func GetOneUnitOfCalculation(
 		ctx,
 		appConfig,
 		measurementID,
+		station.WeatherStationID,
+		runID,
 		&dataOpenWeatherMap,
 	)
 	if err != nil {

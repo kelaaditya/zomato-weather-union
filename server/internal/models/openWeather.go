@@ -104,12 +104,16 @@ func SaveWeatherDataFromOpenWeatherMap(
 	ctx context.Context,
 	appConfig *internal.AppConfig,
 	measurementID uuid.UUID,
+	weatherStationID uuid.UUID,
+	runID uuid.UUID,
 	data *OpenWeatherAPIReponse,
 ) error {
 	// postgresql query string
 	var queryString string = `
 	INSERT INTO measurements_open_weather_map(
 		measurement_id,
+		weather_station_id,
+		run_id,
 		time_zone,
 		time_zone_offset,
 		time_current,
@@ -133,6 +137,8 @@ func SaveWeatherDataFromOpenWeatherMap(
 	)
 	VALUES (
 		@measurementID,
+		@weatherStationID,
+		@runID,
 		@timeZone,
 		@timeZoneOffset,
 		@timeCurrent,
@@ -159,6 +165,8 @@ func SaveWeatherDataFromOpenWeatherMap(
 	// named arguments for building the query string
 	var queryArguments pgx.NamedArgs = pgx.NamedArgs{
 		"measurementID":            measurementID,
+		"weatherStationID":         weatherStationID,
+		"runID":                    runID,
 		"timeZone":                 *data.TimeZone,
 		"timeZoneOffset":           *data.TimeZoneOffset,
 		"timeCurrent":              *data.Current.TimeCurrent,
@@ -184,7 +192,10 @@ func SaveWeatherDataFromOpenWeatherMap(
 	// executing the query string with the named arguments
 	_, err := appConfig.DBPool.Exec(ctx, queryString, queryArguments)
 	if err != nil {
-		return fmt.Errorf("error in inserting open weather data into postgresql: %w", err)
+		return fmt.Errorf(
+			"error in inserting open weather data into postgresql: %w",
+			err,
+		)
 	}
 
 	return nil

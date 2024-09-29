@@ -79,6 +79,8 @@ Copy the weather station data CSV file to `/tmp`.
 cp data/weather-union-station-data.csv /tmp/
 ```
 
+After copying the CSV data to the `/tmp` folder, run the following command to
+load the weather station data into the database.
 ```sh
 psql $DATABASE_URL -f scripts/copy-weather-station-data-into-database.sql
 ```
