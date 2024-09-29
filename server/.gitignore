@@ -4,3 +4,7 @@
 # python3 environment
 env/
 env-python3/
+
+# build/executables
+main
+server
