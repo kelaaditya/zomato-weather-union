@@ -9,7 +9,7 @@ https://go.dev/doc/install
 
 ### PostgreSQL
 Install PostgreSQL by running the following commands:
-```bash
+```sh
 sudo apt install postgresql postgresql-contrib
 
 # connect to postgres
@@ -84,3 +84,34 @@ load the weather station data into the database.
 ```sh
 psql $DATABASE_URL -f scripts/copy-weather-station-data-into-database.sql
 ```
+
+### Python
+The calculations for the wet-bulb temperatures makes use of MetPy.
+See: https://unidata.github.io/MetPy/latest/index.html
+
+You need to have a working Python, Pip and venv installations.
+Python is typically pre-installed with the OS.
+
+To install Pip and venv, run the following commands:
+```
+sudo apt install python3-pip python3-venv
+```
+
+After installation, create a virtual environment in the server directory by
+running:
+```sh
+python3 -m venv server/env-python3
+```
+This will create a new Python3 environment configuration at `server/env`.
+To load/activate the newly created environment, run:
+```sh
+source server/env-python3/bin/activate
+```
+
+This will activate the newly created environment.  
+In this environment, install MetPy by running:
+```sh
+pip install metpy
+```
+
+You should now have a working Python3 environment with MetPy installed in it.

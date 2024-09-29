@@ -1,2 +1,6 @@
 # environment files
 .env
+
+# python3 environment
+env/
+env-python3/
