@@ -1,0 +1,1 @@
+DROP INDEX IF EXISTS weather_union_stations_locality_id_idx;

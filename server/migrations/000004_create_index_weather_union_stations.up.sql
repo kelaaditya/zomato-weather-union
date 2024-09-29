@@ -1,0 +1,1 @@
+CREATE INDEX weather_union_stations_locality_id_idx ON weather_union_stations(locality_id);

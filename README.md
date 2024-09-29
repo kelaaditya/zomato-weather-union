@@ -22,6 +22,10 @@ its associated user by running the following commands inside PostgreSQL
 ```sql
 CREATE DATABASE zomato_weather_union;
 CREATE USER zomato_weather_union WITH ENCRYPTED PASSWORD '<PASSWORD>';
+
+-- require for postgis
+ALTER USER zomato_weather_union WITH SUPERUSER;
+
 GRANT ALL PRIVILEGES ON DATABASE zomato_weather_union TO zomato_weather_union;
 
 -- connect to the project database as the postgres user

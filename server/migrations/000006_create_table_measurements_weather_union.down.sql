@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS measurements_weather_union;

@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS measurements_open_weather_map;
