@@ -11,5 +11,6 @@ CREATE TABLE IF NOT EXISTS measurements_weather_union(
     rain_intensity FLOAT NOT NULL,
     rain_accumulation FLOAT NOT NULL,
     time_stamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (measurement_id, weather_station_id)
+    UNIQUE (measurement_id, weather_station_id),
+    UNIQUE (weather_station_id, run_id)
 );

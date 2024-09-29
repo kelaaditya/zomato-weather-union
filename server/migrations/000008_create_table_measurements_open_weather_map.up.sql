@@ -22,5 +22,6 @@ CREATE TABLE IF NOT EXISTS measurements_open_weather_map(
     weather_object_main TEXT NOT NULL,
     weather_object_description TEXT NOT NULL,
     weather_object_icon TEXT NOT NULL,
-    time_stamp TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    time_stamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (weather_station_id, run_id)
 );
