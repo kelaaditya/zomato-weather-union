@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/kelaaditya/zomato-weather-union/server/internal"
+	"github.com/kelaaditya/zomato-weather-union/server/internal/utilities"
 )
 
 // structure of locality weather response from weather union
@@ -148,14 +149,14 @@ func SaveWeatherDataFromWeatherUnion(
 		"measurementID":    measurementID,
 		"weatherStationID": weatherStationID,
 		"runID":            runID,
-		"message":          *data.Message,
-		"deviceType":       *data.DeviceType,
-		"temperature":      *data.LocalityWeatherData.Temperature,
-		"humidity":         *data.LocalityWeatherData.Humidity,
-		"windSpeed":        *data.LocalityWeatherData.WindSpeed,
-		"windDirection":    *data.LocalityWeatherData.WindDirection,
-		"rainIntensity":    *data.LocalityWeatherData.RainIntensity,
-		"rainAccumulation": *data.LocalityWeatherData.RainAccumulation,
+		"message":          utilities.DereferenceOrNil(data.Message),
+		"deviceType":       utilities.DereferenceOrNil(data.DeviceType),
+		"temperature":      utilities.DereferenceOrNil(data.LocalityWeatherData.Temperature),
+		"humidity":         utilities.DereferenceOrNil(data.LocalityWeatherData.Humidity),
+		"windSpeed":        utilities.DereferenceOrNil(data.LocalityWeatherData.WindSpeed),
+		"windDirection":    utilities.DereferenceOrNil(data.LocalityWeatherData.WindDirection),
+		"rainIntensity":    utilities.DereferenceOrNil(data.LocalityWeatherData.RainIntensity),
+		"rainAccumulation": utilities.DereferenceOrNil(data.LocalityWeatherData.RainAccumulation),
 	}
 
 	// executing the query string with the named arguments

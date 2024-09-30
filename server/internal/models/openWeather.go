@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/kelaaditya/zomato-weather-union/server/internal"
+	"github.com/kelaaditya/zomato-weather-union/server/internal/utilities"
 )
 
 // structure of weather reponse from open weather map
@@ -167,26 +168,26 @@ func SaveWeatherDataFromOpenWeatherMap(
 		"measurementID":            measurementID,
 		"weatherStationID":         weatherStationID,
 		"runID":                    runID,
-		"timeZone":                 *data.TimeZone,
-		"timeZoneOffset":           *data.TimeZoneOffset,
-		"timeCurrent":              *data.Current.TimeCurrent,
-		"timeSunrise":              *data.Current.TimeSunrise,
-		"timeSunset":               *data.Current.TimeSunset,
-		"temperature":              *data.Current.Temperature,
-		"feelsLike":                *data.Current.FeelsLike,
-		"pressure":                 *data.Current.Pressure,
-		"humidity":                 *data.Current.Humidity,
-		"dewPoint":                 *data.Current.DewPoint,
-		"UVIndex":                  *data.Current.UVIndex,
-		"clouds":                   *data.Current.Clouds,
-		"visibility":               *data.Current.Visibility,
-		"windSpeed":                *data.Current.WindSpeed,
-		"windDirection":            *data.Current.WindDirection,
-		"windGust":                 *data.Current.WindGust,
-		"weatherObjectID":          *data.Current.WeatherObject[0].ID,
-		"weatherObjectMain":        *data.Current.WeatherObject[0].Main,
-		"weatherObjectDescription": *data.Current.WeatherObject[0].Description,
-		"weatherObjectIcon":        *data.Current.WeatherObject[0].Icon,
+		"timeZone":                 utilities.DereferenceOrNil(data.TimeZone),
+		"timeZoneOffset":           utilities.DereferenceOrNil(data.TimeZoneOffset),
+		"timeCurrent":              utilities.DereferenceOrNil(data.Current.TimeCurrent),
+		"timeSunrise":              utilities.DereferenceOrNil(data.Current.TimeSunrise),
+		"timeSunset":               utilities.DereferenceOrNil(data.Current.TimeSunset),
+		"temperature":              utilities.DereferenceOrNil(data.Current.Temperature),
+		"feelsLike":                utilities.DereferenceOrNil(data.Current.FeelsLike),
+		"pressure":                 utilities.DereferenceOrNil(data.Current.Pressure),
+		"humidity":                 utilities.DereferenceOrNil(data.Current.Humidity),
+		"dewPoint":                 utilities.DereferenceOrNil(data.Current.DewPoint),
+		"UVIndex":                  utilities.DereferenceOrNil(data.Current.UVIndex),
+		"clouds":                   utilities.DereferenceOrNil(data.Current.Clouds),
+		"visibility":               utilities.DereferenceOrNil(data.Current.Visibility),
+		"windSpeed":                utilities.DereferenceOrNil(data.Current.WindSpeed),
+		"windDirection":            utilities.DereferenceOrNil(data.Current.WindDirection),
+		"windGust":                 utilities.DereferenceOrNil(data.Current.WindGust),
+		"weatherObjectID":          utilities.DereferenceOrNil(data.Current.WeatherObject[0].ID),
+		"weatherObjectMain":        utilities.DereferenceOrNil(data.Current.WeatherObject[0].Main),
+		"weatherObjectDescription": utilities.DereferenceOrNil(data.Current.WeatherObject[0].Description),
+		"weatherObjectIcon":        utilities.DereferenceOrNil(data.Current.WeatherObject[0].Icon),
 	}
 
 	// executing the query string with the named arguments
