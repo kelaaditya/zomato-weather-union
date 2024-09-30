@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS measurements_open_weather_map(
     weather_object_main TEXT,
     weather_object_description TEXT,
     weather_object_icon TEXT,
+    is_processed_for_wet_bulb_calculation BOOLEAN NOT NULL DEFAULT FALSE,
     time_stamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (weather_station_id, run_id)
 );

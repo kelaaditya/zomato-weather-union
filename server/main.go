@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/kelaaditya/zomato-weather-union/server/internal"
@@ -34,10 +35,14 @@ func main() {
 	}
 	defer appConfig.DBPoolClose()
 
-	// do one pass through all weather stations
-	if err := models.GetAllCalculations(appContext, &appConfig); err != nil {
+	// get unprocessed data for wet bulb calculations
+	unprocessedSlice, err := models.GetUnprocessedDataForWetBulbCalculations(
+		appContext,
+		&appConfig,
+	)
+	if err != nil {
 		appConfig.Logger.Error(err.Error())
-		// manual call exit
 		os.Exit(1)
 	}
+	fmt.Println(unprocessedSlice)
 }

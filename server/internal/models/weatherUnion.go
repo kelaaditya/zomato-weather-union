@@ -127,7 +127,8 @@ func SaveWeatherDataFromWeatherUnion(
 		wind_speed,
 		wind_direction,
 		rain_intensity,
-		rain_accumulation
+		rain_accumulation,
+		is_processed_for_wet_bulb_calculation
 	)
 	VALUES (
 		@measurementID,
@@ -140,23 +141,25 @@ func SaveWeatherDataFromWeatherUnion(
 		@windSpeed,
 		@windDirection,
 		@rainIntensity,
-		@rainAccumulation
+		@rainAccumulation,
+		@isProcessedForWetBulbCalculation
 	);
 	`
 
 	// named arguments for building the query string
 	var queryArguments pgx.NamedArgs = pgx.NamedArgs{
-		"measurementID":    measurementID,
-		"weatherStationID": weatherStationID,
-		"runID":            runID,
-		"message":          utilities.DereferenceOrNil(data.Message),
-		"deviceType":       utilities.DereferenceOrNil(data.DeviceType),
-		"temperature":      utilities.DereferenceOrNil(data.LocalityWeatherData.Temperature),
-		"humidity":         utilities.DereferenceOrNil(data.LocalityWeatherData.Humidity),
-		"windSpeed":        utilities.DereferenceOrNil(data.LocalityWeatherData.WindSpeed),
-		"windDirection":    utilities.DereferenceOrNil(data.LocalityWeatherData.WindDirection),
-		"rainIntensity":    utilities.DereferenceOrNil(data.LocalityWeatherData.RainIntensity),
-		"rainAccumulation": utilities.DereferenceOrNil(data.LocalityWeatherData.RainAccumulation),
+		"measurementID":                    measurementID,
+		"weatherStationID":                 weatherStationID,
+		"runID":                            runID,
+		"message":                          utilities.DereferenceOrNil(data.Message),
+		"deviceType":                       utilities.DereferenceOrNil(data.DeviceType),
+		"temperature":                      utilities.DereferenceOrNil(data.LocalityWeatherData.Temperature),
+		"humidity":                         utilities.DereferenceOrNil(data.LocalityWeatherData.Humidity),
+		"windSpeed":                        utilities.DereferenceOrNil(data.LocalityWeatherData.WindSpeed),
+		"windDirection":                    utilities.DereferenceOrNil(data.LocalityWeatherData.WindDirection),
+		"rainIntensity":                    utilities.DereferenceOrNil(data.LocalityWeatherData.RainIntensity),
+		"rainAccumulation":                 utilities.DereferenceOrNil(data.LocalityWeatherData.RainAccumulation),
+		"isProcessedForWetBulbCalculation": false, // set false manually as this is just the data entry step
 	}
 
 	// executing the query string with the named arguments
@@ -191,7 +194,7 @@ func GetWeatherStationDataFromWeatherUnion(
 		device_type,
 		device_type_integer
 	FROM weather_union_stations
-	LIMIT 5;
+	LIMIT 100;
 	`
 
 	// prepare the query

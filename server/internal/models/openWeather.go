@@ -134,7 +134,8 @@ func SaveWeatherDataFromOpenWeatherMap(
 		weather_object_id,
 		weather_object_main,
 		weather_object_description,
-		weather_object_icon
+		weather_object_icon,
+		is_processed_for_wet_bulb_calculation
 	)
 	VALUES (
 		@measurementID,
@@ -159,35 +160,37 @@ func SaveWeatherDataFromOpenWeatherMap(
 		@weatherObjectID,
 		@weatherObjectMain,
 		@weatherObjectDescription,
-		@weatherObjectIcon
+		@weatherObjectIcon,
+		@isProcessedForWetBulbCalculation
 	);
 	`
 
 	// named arguments for building the query string
 	var queryArguments pgx.NamedArgs = pgx.NamedArgs{
-		"measurementID":            measurementID,
-		"weatherStationID":         weatherStationID,
-		"runID":                    runID,
-		"timeZone":                 utilities.DereferenceOrNil(data.TimeZone),
-		"timeZoneOffset":           utilities.DereferenceOrNil(data.TimeZoneOffset),
-		"timeCurrent":              utilities.DereferenceOrNil(data.Current.TimeCurrent),
-		"timeSunrise":              utilities.DereferenceOrNil(data.Current.TimeSunrise),
-		"timeSunset":               utilities.DereferenceOrNil(data.Current.TimeSunset),
-		"temperature":              utilities.DereferenceOrNil(data.Current.Temperature),
-		"feelsLike":                utilities.DereferenceOrNil(data.Current.FeelsLike),
-		"pressure":                 utilities.DereferenceOrNil(data.Current.Pressure),
-		"humidity":                 utilities.DereferenceOrNil(data.Current.Humidity),
-		"dewPoint":                 utilities.DereferenceOrNil(data.Current.DewPoint),
-		"UVIndex":                  utilities.DereferenceOrNil(data.Current.UVIndex),
-		"clouds":                   utilities.DereferenceOrNil(data.Current.Clouds),
-		"visibility":               utilities.DereferenceOrNil(data.Current.Visibility),
-		"windSpeed":                utilities.DereferenceOrNil(data.Current.WindSpeed),
-		"windDirection":            utilities.DereferenceOrNil(data.Current.WindDirection),
-		"windGust":                 utilities.DereferenceOrNil(data.Current.WindGust),
-		"weatherObjectID":          utilities.DereferenceOrNil(data.Current.WeatherObject[0].ID),
-		"weatherObjectMain":        utilities.DereferenceOrNil(data.Current.WeatherObject[0].Main),
-		"weatherObjectDescription": utilities.DereferenceOrNil(data.Current.WeatherObject[0].Description),
-		"weatherObjectIcon":        utilities.DereferenceOrNil(data.Current.WeatherObject[0].Icon),
+		"measurementID":                    measurementID,
+		"weatherStationID":                 weatherStationID,
+		"runID":                            runID,
+		"timeZone":                         utilities.DereferenceOrNil(data.TimeZone),
+		"timeZoneOffset":                   utilities.DereferenceOrNil(data.TimeZoneOffset),
+		"timeCurrent":                      utilities.DereferenceOrNil(data.Current.TimeCurrent),
+		"timeSunrise":                      utilities.DereferenceOrNil(data.Current.TimeSunrise),
+		"timeSunset":                       utilities.DereferenceOrNil(data.Current.TimeSunset),
+		"temperature":                      utilities.DereferenceOrNil(data.Current.Temperature),
+		"feelsLike":                        utilities.DereferenceOrNil(data.Current.FeelsLike),
+		"pressure":                         utilities.DereferenceOrNil(data.Current.Pressure),
+		"humidity":                         utilities.DereferenceOrNil(data.Current.Humidity),
+		"dewPoint":                         utilities.DereferenceOrNil(data.Current.DewPoint),
+		"UVIndex":                          utilities.DereferenceOrNil(data.Current.UVIndex),
+		"clouds":                           utilities.DereferenceOrNil(data.Current.Clouds),
+		"visibility":                       utilities.DereferenceOrNil(data.Current.Visibility),
+		"windSpeed":                        utilities.DereferenceOrNil(data.Current.WindSpeed),
+		"windDirection":                    utilities.DereferenceOrNil(data.Current.WindDirection),
+		"windGust":                         utilities.DereferenceOrNil(data.Current.WindGust),
+		"weatherObjectID":                  utilities.DereferenceOrNil(data.Current.WeatherObject[0].ID),
+		"weatherObjectMain":                utilities.DereferenceOrNil(data.Current.WeatherObject[0].Main),
+		"weatherObjectDescription":         utilities.DereferenceOrNil(data.Current.WeatherObject[0].Description),
+		"weatherObjectIcon":                utilities.DereferenceOrNil(data.Current.WeatherObject[0].Icon),
+		"isProcessedForWetBulbCalculation": false, // set false manually as this is just the data entry step
 	}
 
 	// executing the query string with the named arguments
