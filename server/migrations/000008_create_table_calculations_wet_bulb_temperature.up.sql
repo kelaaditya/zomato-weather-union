@@ -1,5 +1,6 @@
-CREATE TABLE IF NOT EXISTS calculations(
-    measurement_id UUID PRIMARY KEY NOT NULL REFERENCES measurements_weather_union(measurement_id),
+CREATE TABLE IF NOT EXISTS calculations_wet_bulb_temperature(
+    calculation_id UUID PRIMARY KEY NOT NULL,
+    measurement_id_weather_union UUID NOT NULL REFERENCES measurements_weather_union(measurement_id),
     method TEXT NOT NULL CHECK (method IN (
         'metpy-with-open-weather-map'
     )),
