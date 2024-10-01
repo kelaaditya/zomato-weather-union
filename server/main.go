@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 
 	"github.com/kelaaditya/zomato-weather-union/server/internal"
@@ -35,8 +34,8 @@ func main() {
 	}
 	defer appConfig.DBPoolClose()
 
-	// get unprocessed data for wet bulb calculations
-	unprocessedSlice, err := models.GetUnprocessedDataForWetBulbCalculations(
+	// calculate wet bulb temperature from all unprocessed values
+	err = models.CalculateAndSaveTemperaturesAllUnprocessed(
 		appContext,
 		&appConfig,
 	)
@@ -44,5 +43,4 @@ func main() {
 		appConfig.Logger.Error(err.Error())
 		os.Exit(1)
 	}
-	fmt.Println(unprocessedSlice)
 }

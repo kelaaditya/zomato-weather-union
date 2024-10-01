@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS measurements_weather_union(
     wind_direction FLOAT,
     rain_intensity FLOAT,
     rain_accumulation FLOAT,
-    is_processed_for_wet_bulb_calculation BOOLEAN NOT NULL DEFAULT FALSE,
+    is_processed_for_calculation_temperature BOOLEAN NOT NULL DEFAULT FALSE,
+    is_successful_for_calculation_temperature BOOLEAN NOT NULL DEFAULT FALSE,
     time_stamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (measurement_id, weather_station_id),
     UNIQUE (weather_station_id, run_id)

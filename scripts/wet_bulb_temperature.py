@@ -27,7 +27,7 @@ args = parser.parse_args()
 # arguments:
 #   temperature
 #   humidity (relative)
-dew_point_temperature_estimate = dewpoint_from_relative_humidity(
+temperature_estimate_dew_point = dewpoint_from_relative_humidity(
     args.temperature * units.degC,
     args.humidity * units.percent
 )
@@ -37,16 +37,16 @@ dew_point_temperature_estimate = dewpoint_from_relative_humidity(
 #   pressure
 #   temperature
 #   dewpoint
-wet_bulb_temperature_estimate = wet_bulb_temperature(
+temperature_estimate_wet_bulb = wet_bulb_temperature(
     args.pressure * units.hPa,
     args.temperature * units.degC,
-    dew_point_temperature_estimate.magnitude * units.degC
+    temperature_estimate_dew_point.magnitude * units.degC
 )
 
 # build json
 return_data = {}
-return_data["dew_point_temperature"] = dew_point_temperature_estimate.magnitude
-return_data["wet_bulb_temperature"] = wet_bulb_temperature_estimate.magnitude
+return_data["temperature_dew_point"] = temperature_estimate_dew_point.magnitude
+return_data["temperature_wet_bulb"] = temperature_estimate_wet_bulb.magnitude
 # write to stdout so that
 # golang can capture it
 json.dump(return_data, sys.stdout)

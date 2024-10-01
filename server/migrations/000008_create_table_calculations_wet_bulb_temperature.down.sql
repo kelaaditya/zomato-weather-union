@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS calculations_wet_bulb_temperature;
+DROP TABLE IF EXISTS calculations_temperature;

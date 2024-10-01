@@ -11,7 +11,7 @@ import (
 )
 
 // structure of measurement data needed for wet bulb calculations
-type MeasurementUnprocessedWetBulb struct {
+type MeasurementTemperature struct {
 	MeasurementIDWeatherUnion   uuid.UUID `json:"measurement_id_weather_union"`
 	MeasurementIDOpenWeatherMap uuid.UUID `json:"measurement_id_open_weather_map"`
 	WeatherStationID            uuid.UUID `json:"weather_station_id"`
@@ -21,10 +21,10 @@ type MeasurementUnprocessedWetBulb struct {
 	Pressure                    float64   `json:"pressure"`
 }
 
-func GetUnprocessedDataForWetBulbCalculations(
+func GetUnprocessedDataForCalculationsTemperature(
 	ctx context.Context,
 	appConfig *internal.AppConfig,
-) ([]MeasurementUnprocessedWetBulb, error) {
+) ([]MeasurementTemperature, error) {
 	// postgresql query string
 	var queryString string = `
 	SELECT
@@ -41,11 +41,11 @@ func GetUnprocessedDataForWetBulbCalculations(
 		mwu.weather_station_id = mowm.weather_station_id AND
 		mwu.run_id = mowm.run_id
 	WHERE
+		mwu.is_processed_for_calculation_temperature = FALSE AND
+		mowm.is_processed_for_calculation_temperature = FALSE AND
 		mwu.temperature IS NOT NULL AND
 		mwu.humidity IS NOT NULL AND
-		mowm.pressure IS NOT NULL AND
-		mwu.is_processed_for_wet_bulb_calculation = FALSE AND
-		mowm.is_processed_for_wet_bulb_calculation = FALSE;
+		mowm.pressure IS NOT NULL;
 	`
 
 	// prepare the query
@@ -57,7 +57,7 @@ func GetUnprocessedDataForWetBulbCalculations(
 	// run the query and collect rows
 	unprocessedSlice, err := pgx.CollectRows(
 		rows,
-		pgx.RowToStructByName[MeasurementUnprocessedWetBulb],
+		pgx.RowToStructByName[MeasurementTemperature],
 	)
 	if err != nil {
 		return nil, err
