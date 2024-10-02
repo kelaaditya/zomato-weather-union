@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -13,16 +12,26 @@ import (
 	"github.com/kelaaditya/zomato-weather-union/server/internal/utilities"
 )
 
+// type to hold a "measurement" from weather union
+// see the schema structure for the table "measurement_weather_union"
+// in the PostgreSQL migration files.
+type WeatherUnionMeasurement struct {
+	MeasurementID                  uuid.UUID `json:"measurement_id"`
+	WeatherStationID               uuid.UUID `json:"weather_station_id"`
+	RunID                          uuid.UUID `json:"run_id"`
+	WeatherUnionAPIReponseLocality           // embedded struct
+}
+
 // structure of locality weather response from weather union
 type WeatherUnionAPIReponseLocality struct {
-	Status              *string                         `json:"status"`
-	Message             *string                         `json:"message"`
-	DeviceType          *int                            `json:"device_type"`
-	LocalityWeatherData WeatherUnionDataWeatherLocality `json:"locality_weather_data"`
+	Status              *string                           `json:"status"`
+	Message             *string                           `json:"message"`
+	DeviceType          *int                              `json:"device_type"`
+	LocalityWeatherData WeatherUnionObjectWeatherLocality `json:"locality_weather_data"`
 }
 
 // structure of locality weather data from weather union
-type WeatherUnionDataWeatherLocality struct {
+type WeatherUnionObjectWeatherLocality struct {
 	Temperature      *float64 `json:"temperature"`
 	Humidity         *float64 `json:"humidity"`
 	WindSpeed        *float64 `json:"wind_speed"`
@@ -32,7 +41,7 @@ type WeatherUnionDataWeatherLocality struct {
 }
 
 // structure of weather station data from weather union
-type WeatherUnionDataStation struct {
+type WeatherUnionStation struct {
 	WeatherStationID  uuid.UUID `json:"weather_station_id"`
 	CityName          string    `json:"city_name"`
 	LocalityName      string    `json:"locality_name"`
@@ -44,143 +53,157 @@ type WeatherUnionDataStation struct {
 }
 
 // get weather data from locality (weather union)
-func GetWeatherDataFromWeatherUnionLocality(
+func CallAPIWeatherUnionLocality(
 	appConfig *internal.AppConfig,
-	localityID string,
-) (WeatherUnionAPIReponseLocality, error) {
-	// base URL
-	var baseURLString string = appConfig.ENVVariables.URLBaseWeatherUnion
-	var localityPath string = "get_locality_weather_data"
-	// join base URL with specific path
-	specificURLString, err := url.JoinPath(baseURLString, localityPath)
+	station *WeatherUnionStation,
+	runID uuid.UUID,
+) (WeatherUnionMeasurement, error) {
+	// initialize measurementID as UUID for this calculation
+	measurementID, err := uuid.NewRandom()
 	if err != nil {
-		return WeatherUnionAPIReponseLocality{}, err
+		return WeatherUnionMeasurement{}, err
 	}
-	// parse to URL type
-	specificURL, err := url.Parse(specificURLString)
-	if err != nil {
-		return WeatherUnionAPIReponseLocality{}, err
-	}
-	// add locality ID as the query parameter
-	q := specificURL.Query()
-	q.Set("locality_id", localityID)
-	specificURL.RawQuery = q.Encode()
-	// get string of the built API URL
-	var APIURLString string = specificURL.String()
 
-	// initialize new GET request
-	request, err := http.NewRequest(http.MethodGet, APIURLString, nil)
+	//
+	// build URL string for API call
+	//
+	// query parameters map
+	var mapQueryParameters map[string]string = map[string]string{
+		"locality_id": station.LocalityID,
+	}
+	// call utility function to build URL string
+	URLString, err := utilities.BuildURLString(
+		appConfig.ENVVariables.URLBaseWeatherUnion,
+		"get_locality_weather_data",
+		mapQueryParameters,
+	)
 	if err != nil {
-		return WeatherUnionAPIReponseLocality{}, err
+		return WeatherUnionMeasurement{}, err
+	}
+
+	//
+	// initialize new GET request
+	//
+	// new request
+	request, err := http.NewRequest(http.MethodGet, URLString, nil)
+	if err != nil {
+		return WeatherUnionMeasurement{}, err
 	}
 	// add zomato API key to header
-	request.Header.Add("X-Zomato-Api-Key", appConfig.ENVVariables.APIKeyWeatherUnion)
+	request.Header.Add(
+		"X-Zomato-Api-Key",
+		appConfig.ENVVariables.APIKeyWeatherUnion,
+	)
 	// initialize new http client
 	var client http.Client = http.Client{}
 	// carry out get request
 	response, err := client.Do(request)
 	if err != nil {
-		return WeatherUnionAPIReponseLocality{}, err
+		return WeatherUnionMeasurement{}, err
 	}
 	defer response.Body.Close()
 
 	// check the http status codes
 	if response.StatusCode != http.StatusOK {
-		return WeatherUnionAPIReponseLocality{}, fmt.Errorf(
+		return WeatherUnionMeasurement{}, fmt.Errorf(
 			"error in getting local data from weather union api. status: %v",
 			response.StatusCode,
 		)
 	}
 
-	// decode to JSON
+	//
+	// decode JSON
+	//
+	// holder for data from decode
 	var localityAPIReponseObject WeatherUnionAPIReponseLocality
 	// create JSON decoder
 	jsonDecoder := json.NewDecoder(response.Body)
 	if err := jsonDecoder.Decode(&localityAPIReponseObject); err != nil {
-		return WeatherUnionAPIReponseLocality{}, err
+		return WeatherUnionMeasurement{}, err
 	}
 
-	return localityAPIReponseObject, nil
+	//
+	// initialize the measurement object for weather union
+	//
+	var measurement WeatherUnionMeasurement = WeatherUnionMeasurement{
+		MeasurementID:                  measurementID,
+		WeatherStationID:               station.WeatherStationID,
+		RunID:                          runID,
+		WeatherUnionAPIReponseLocality: localityAPIReponseObject,
+	}
+
+	return measurement, nil
 }
 
-// function to store the Weather Union API call response to PostgreSQL
-// measurementID:	each individual measurement
-// runID:			each run (multiple individual measurements) will have one ID
-func SaveWeatherDataFromWeatherUnion(
+// function to store a slice of measurements to the database
+// in one bulk insert
+func SaveMeasurementsWeatherUnion(
 	ctx context.Context,
 	appConfig *internal.AppConfig,
-	measurementID uuid.UUID,
-	weatherStationID uuid.UUID,
-	runID uuid.UUID,
-	data *WeatherUnionAPIReponseLocality,
+	sliceMeasurementsWeatherUnion []WeatherUnionMeasurement,
 ) error {
-	// postgresql query string
-	var queryString string = `
-	INSERT INTO measurements_weather_union(
-		measurement_id,
-		weather_station_id,
-		run_id,
-		message,
-		device_type,
-		temperature,
-		humidity,
-		wind_speed,
-		wind_direction,
-		rain_intensity,
-		rain_accumulation,
-		is_processed_for_wet_bulb_calculation
+	// create a slice containing a slice of any types
+	// length of the holder slice is the length of calculations
+	// passed to the function
+	var sliceInsertValues [][]any = make(
+		[][]any,
+		len(sliceMeasurementsWeatherUnion),
 	)
-	VALUES (
-		@measurementID,
-		@weatherStationID,
-		@runID,
-		@message,
-		@deviceType,
-		@temperature,
-		@humidity,
-		@windSpeed,
-		@windDirection,
-		@rainIntensity,
-		@rainAccumulation,
-		@isProcessedForWetBulbCalculation
-	);
-	`
 
-	// named arguments for building the query string
-	var queryArguments pgx.NamedArgs = pgx.NamedArgs{
-		"measurementID":                    measurementID,
-		"weatherStationID":                 weatherStationID,
-		"runID":                            runID,
-		"message":                          utilities.DereferenceOrNil(data.Message),
-		"deviceType":                       utilities.DereferenceOrNil(data.DeviceType),
-		"temperature":                      utilities.DereferenceOrNil(data.LocalityWeatherData.Temperature),
-		"humidity":                         utilities.DereferenceOrNil(data.LocalityWeatherData.Humidity),
-		"windSpeed":                        utilities.DereferenceOrNil(data.LocalityWeatherData.WindSpeed),
-		"windDirection":                    utilities.DereferenceOrNil(data.LocalityWeatherData.WindDirection),
-		"rainIntensity":                    utilities.DereferenceOrNil(data.LocalityWeatherData.RainIntensity),
-		"rainAccumulation":                 utilities.DereferenceOrNil(data.LocalityWeatherData.RainAccumulation),
-		"isProcessedForWetBulbCalculation": false, // set false manually as this is just the data entry step
+	// build a slice of values for bulk insert
+	for i, measurement := range sliceMeasurementsWeatherUnion {
+		sliceInsertValues[i] = []any{
+			measurement.MeasurementID,
+			measurement.WeatherStationID,
+			measurement.RunID,
+			utilities.DereferenceOrNil(measurement.Message),
+			utilities.DereferenceOrNil(measurement.DeviceType),
+			utilities.DereferenceOrNil(measurement.LocalityWeatherData.Temperature),
+			utilities.DereferenceOrNil(measurement.LocalityWeatherData.Humidity),
+			utilities.DereferenceOrNil(measurement.LocalityWeatherData.WindSpeed),
+			utilities.DereferenceOrNil(measurement.LocalityWeatherData.WindDirection),
+			utilities.DereferenceOrNil(measurement.LocalityWeatherData.RainIntensity),
+			utilities.DereferenceOrNil(measurement.LocalityWeatherData.RainAccumulation),
+		}
 	}
 
-	// executing the query string with the named arguments
-	_, err := appConfig.DBPool.Exec(ctx, queryString, queryArguments)
+	// create a bulk insert query
+	_, err := appConfig.DBPool.CopyFrom(
+		ctx,
+		pgx.Identifier{"measurements_weather_union"},
+		[]string{
+			"measurement_id",
+			"weather_station_id",
+			"run_id",
+			"message",
+			"device_type",
+			"temperature",
+			"humidity",
+			"wind_speed",
+			"wind_direction",
+			"rain_intensity",
+			"rain_accumulation",
+		},
+		pgx.CopyFromRows(sliceInsertValues),
+	)
 	if err != nil {
 		return fmt.Errorf(
-			"error in inserting weather union data into postgresql: %w",
+			"error in inserting measurement into postgresql: %w",
 			err,
 		)
 	}
 
+	// return nil if all okay
 	return nil
 }
 
 // function to get Weather Union weather stations data (all)
-func GetWeatherStationDataFromWeatherUnion(
+func GetWeatherStationsAllWeatherUnion(
 	ctx context.Context,
 	appConfig *internal.AppConfig,
-) ([]WeatherUnionDataStation, error) {
+) ([]WeatherUnionStation, error) {
 	// placeholder slice
-	var stationDataSlice []WeatherUnionDataStation
+	var stationDataSlice []WeatherUnionStation
 
 	// query string
 	var queryString string = `
@@ -206,7 +229,7 @@ func GetWeatherStationDataFromWeatherUnion(
 	// run the query and collect rows
 	stationDataSlice, err = pgx.CollectRows(
 		rows,
-		pgx.RowToStructByName[WeatherUnionDataStation],
+		pgx.RowToStructByName[WeatherUnionStation],
 	)
 	if err != nil {
 		return nil, err

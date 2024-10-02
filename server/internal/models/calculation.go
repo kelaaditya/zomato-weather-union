@@ -45,10 +45,11 @@ func CalculateAndSaveTemperaturesAllUnprocessed(
 		return err
 	}
 
-	// create a wait group
-	var wgCalculations errgroup.Group
 	// create a slice to append calculations to
 	var sliceCalculationsSuccessful []CalculationTemperature
+
+	// create a wait group
+	var wgCalculations errgroup.Group
 	// create a mutex object
 	var mutex sync.Mutex
 

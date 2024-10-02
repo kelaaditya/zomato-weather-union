@@ -3,6 +3,8 @@ package models
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"sync"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -21,6 +23,164 @@ type MeasurementTemperature struct {
 	Pressure                    float64   `json:"pressure"`
 }
 
+// carry out a single run of measurements over all the
+// weather stations from weather union
+func GetAndSaveMeasurementsFromAPISingleRun(
+	ctx context.Context,
+	appConfig *internal.AppConfig,
+) error {
+	// initialize runID as UUID for this calculation
+	runID, err := uuid.NewRandom()
+	if err != nil {
+		return err
+	}
+
+	// log runID when started
+	appConfig.Logger.Info("run started.", "runID", runID.String())
+
+	// get all weather station data from weather union
+	sliceStationsWeatherUnion, err := GetWeatherStationsAllWeatherUnion(
+		ctx,
+		appConfig,
+	)
+	if err != nil {
+		return err
+	}
+
+	// create a slice to append measurements from weather union
+	var sliceMeasurementsWeatherUnion []WeatherUnionMeasurement
+	// create a slice to append measurements from weather union
+	var sliceMeasurementsOpenWeatherMap []OpenWeatherMapMeasurement
+
+	// create a wait group
+	var wgMeasurements errgroup.Group
+	// create a mutex object
+	var mutex sync.Mutex
+
+	// iterate over all stations
+	for _, station := range sliceStationsWeatherUnion {
+		wgMeasurements.Go(func() error {
+			// carry out API call to weather union
+			measurementWeatherUnion, err := CallAPIWeatherUnionLocality(
+				appConfig,
+				&station,
+				runID,
+			)
+			if err != nil {
+				return err
+			}
+
+			// carry out API call to open weather map
+			measurementOpenWeatherMap, err := CallAPIOpenWeatherMap(
+				appConfig,
+				&station,
+				runID,
+			)
+			if err != nil {
+				return err
+			}
+
+			// append new measurements to corresponding slices
+			// lock and unlock slices while appending
+			mutex.Lock()
+			sliceMeasurementsWeatherUnion = append(
+				sliceMeasurementsWeatherUnion,
+				measurementWeatherUnion,
+			)
+			sliceMeasurementsOpenWeatherMap = append(
+				sliceMeasurementsOpenWeatherMap,
+				measurementOpenWeatherMap,
+			)
+			mutex.Unlock()
+
+			// return nil if okay
+			return nil
+		})
+	}
+
+	// log the count of measurements received from weather union
+	appConfig.Logger.Info(
+		"measurements gathered from weather union",
+		"total",
+		strconv.Itoa(len(sliceMeasurementsWeatherUnion)),
+	)
+	// log the count of measurements received from open weather map
+	appConfig.Logger.Info(
+		"measurements gathered from open weather map",
+		"total",
+		strconv.Itoa(len(sliceMeasurementsOpenWeatherMap)),
+	)
+
+	// wait until all goroutines are completed
+	// return the first non-nil error
+	if err := wgMeasurements.Wait(); err != nil {
+		// do not return an error here
+		// as we want to continue the flag setting for those that
+		// have been processed
+		appConfig.Logger.Error(err.Error())
+	}
+
+	// save run ID
+	err = SaveMeasurementRun(ctx, appConfig, runID)
+	if err != nil {
+		return err
+	}
+
+	// save measurements from weather union
+	err = SaveMeasurementsWeatherUnion(
+		ctx,
+		appConfig,
+		sliceMeasurementsWeatherUnion,
+	)
+	if err != nil {
+		return err
+	}
+
+	// save measurement from open weather map
+	err = SaveMeasurementOpenWeatherMap(
+		ctx,
+		appConfig,
+		sliceMeasurementsOpenWeatherMap,
+	)
+	if err != nil {
+		return err
+	}
+
+	// return nil if all okay
+	return nil
+}
+
+// function to save the measurement run ID
+func SaveMeasurementRun(
+	ctx context.Context,
+	appConfig *internal.AppConfig,
+	runID uuid.UUID,
+) error {
+	// postgresql query string
+	var queryString string = `
+	INSERT INTO measurement_runs(run_id)
+	VALUES (@runID);
+	`
+
+	// named arguments for building the query string
+	var queryArguments pgx.NamedArgs = pgx.NamedArgs{
+		"runID": runID,
+	}
+
+	// executing the query string with the named arguments
+	_, err := appConfig.DBPool.Exec(ctx, queryString, queryArguments)
+	if err != nil {
+		return fmt.Errorf(
+			"error in inserting measurement run data into postgresql: %w",
+			err,
+		)
+	}
+
+	return nil
+}
+
+// get all the unprocessed measurement values
+// from both weather union and open weather map
 func GetUnprocessedDataForCalculationsTemperature(
 	ctx context.Context,
 	appConfig *internal.AppConfig,
@@ -65,179 +225,4 @@ func GetUnprocessedDataForCalculationsTemperature(
 
 	// return slice of unprocessed data for wet bulb calculations
 	return unprocessedSlice, nil
-}
-
-// get all calculations across all weather stations for both weather union
-// and open weather map
-// this is 'one' run of the server fetcher
-func GetAndSaveMeasurementsFromAllWeatherStationsInOneRun(
-	ctx context.Context,
-	appConfig *internal.AppConfig,
-) error {
-	// initialize runID as UUID for this run
-	runID, err := uuid.NewRandom()
-	if err != nil {
-		return err
-	}
-	// save measurement run ID
-	err = SaveMeasurementRun(ctx, appConfig, runID)
-	if err != nil {
-		return err
-	}
-
-	// get data of all weather stations
-	stations, err := GetWeatherStationDataFromWeatherUnion(ctx, appConfig)
-	if err != nil {
-		return err
-	}
-
-	// create a wait group
-	var wgCalculations errgroup.Group
-
-	// iterate over stations
-	for _, station := range stations {
-		wgCalculations.Go(func() error {
-			// get measurement from weather union
-			err := GetAndSaveMeasurementFromWeatherUnion(
-				ctx,
-				appConfig,
-				runID,
-				station,
-			)
-			if err != nil {
-				return err
-			}
-
-			// get measurement from open weather map
-			err = GetAndSaveMeasurementFromOpenWeatherMap(
-				ctx,
-				appConfig,
-				runID,
-				station,
-			)
-			if err != nil {
-				return err
-			}
-
-			return nil
-		})
-	}
-
-	// wait until all goroutines are completed
-	// return first non-nil error
-	if err := wgCalculations.Wait(); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// get one measurement from weather union
-func GetAndSaveMeasurementFromWeatherUnion(
-	ctx context.Context,
-	appConfig *internal.AppConfig,
-	runID uuid.UUID,
-	station WeatherUnionDataStation,
-) error {
-	// initialize mesurementID as UUID for weather union
-	measurementIDWeatherUnion, err := uuid.NewRandom()
-	if err != nil {
-		return err
-	}
-
-	// get data from weather union
-	dataWeatherUnion, err := GetWeatherDataFromWeatherUnionLocality(
-		appConfig,
-		station.LocalityID,
-	)
-	if err != nil {
-		return err
-	}
-
-	// save data from weather union
-	err = SaveWeatherDataFromWeatherUnion(
-		ctx,
-		appConfig,
-		measurementIDWeatherUnion,
-		station.WeatherStationID,
-		runID,
-		&dataWeatherUnion,
-	)
-	if err != nil {
-		fmt.Println("Error here 2!")
-		return err
-	}
-
-	// return nil if all okay
-	return nil
-}
-
-// get one measurement from open weather map
-func GetAndSaveMeasurementFromOpenWeatherMap(
-	ctx context.Context,
-	appConfig *internal.AppConfig,
-	runID uuid.UUID,
-	station WeatherUnionDataStation,
-) error {
-	// initialize measurementID as UUID for open weather map
-	measurementIDOpenWeatherMap, err := uuid.NewRandom()
-	if err != nil {
-		return err
-	}
-
-	// get data from open weather map
-	dataOpenWeatherMap, err := GetWeatherDataFromOpenWeatherMap(
-		appConfig,
-		station.Latitude,
-		station.Longitude,
-	)
-	if err != nil {
-		return err
-	}
-
-	// save data from open weather map
-	err = SaveWeatherDataFromOpenWeatherMap(
-		ctx,
-		appConfig,
-		measurementIDOpenWeatherMap,
-		station.WeatherStationID,
-		runID,
-		&dataOpenWeatherMap,
-	)
-	if err != nil {
-		fmt.Println("Error here 3!")
-		return err
-	}
-
-	// return nil if all okay
-	return nil
-}
-
-// function to save the measurement run ID
-func SaveMeasurementRun(
-	ctx context.Context,
-	appConfig *internal.AppConfig,
-	runID uuid.UUID,
-) error {
-	// postgresql query string
-	var queryString string = `
-	INSERT INTO measurement_runs(run_id)
-	VALUES (@runID);
-	`
-
-	// named arguments for building the query string
-	var queryArguments pgx.NamedArgs = pgx.NamedArgs{
-		"runID": runID,
-	}
-
-	// executing the query string with the named arguments
-	_, err := appConfig.DBPool.Exec(ctx, queryString, queryArguments)
-	if err != nil {
-		return fmt.Errorf(
-			"error in inserting measurement run data into postgresql: %w",
-			err,
-		)
-	}
-
-	return nil
 }

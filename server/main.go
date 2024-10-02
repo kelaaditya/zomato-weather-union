@@ -34,7 +34,17 @@ func main() {
 	}
 	defer appConfig.DBPoolClose()
 
-	// calculate wet bulb temperature from all unprocessed values
+	// call APIs for measurement
+	err = models.GetAndSaveMeasurementsFromAPISingleRun(
+		appContext,
+		&appConfig,
+	)
+	if err != nil {
+		appConfig.Logger.Error(err.Error())
+		os.Exit(1)
+	}
+
+	// calculate and save temperature values
 	err = models.CalculateAndSaveTemperaturesAllUnprocessed(
 		appContext,
 		&appConfig,
