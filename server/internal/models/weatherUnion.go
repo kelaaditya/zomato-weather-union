@@ -217,7 +217,7 @@ func GetWeatherStationsAllWeatherUnion(
 		device_type,
 		device_type_integer
 	FROM weather_union_stations
-	LIMIT 100;
+	LIMIT 10;
 	`
 
 	// prepare the query

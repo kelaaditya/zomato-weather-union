@@ -98,6 +98,15 @@ func GetAndSaveMeasurementsFromAPISingleRun(
 		})
 	}
 
+	// wait until all goroutines are completed
+	// return the first non-nil error
+	if err := wgMeasurements.Wait(); err != nil {
+		// do not return an error here
+		// as we want to continue the flag setting for those that
+		// have been processed
+		appConfig.Logger.Error(err.Error())
+	}
+
 	// log the count of measurements received from weather union
 	appConfig.Logger.Info(
 		"measurements gathered from weather union",
@@ -110,15 +119,6 @@ func GetAndSaveMeasurementsFromAPISingleRun(
 		"total",
 		strconv.Itoa(len(sliceMeasurementsOpenWeatherMap)),
 	)
-
-	// wait until all goroutines are completed
-	// return the first non-nil error
-	if err := wgMeasurements.Wait(); err != nil {
-		// do not return an error here
-		// as we want to continue the flag setting for those that
-		// have been processed
-		appConfig.Logger.Error(err.Error())
-	}
 
 	// save run ID
 	err = SaveMeasurementRun(ctx, appConfig, runID)

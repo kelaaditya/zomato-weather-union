@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/kelaaditya/zomato-weather-union/server/internal"
 	"github.com/kelaaditya/zomato-weather-union/server/internal/models"
@@ -34,23 +35,43 @@ func main() {
 	}
 	defer appConfig.DBPoolClose()
 
-	// call APIs for measurement
-	err = models.GetAndSaveMeasurementsFromAPISingleRun(
-		appContext,
-		&appConfig,
-	)
-	if err != nil {
-		appConfig.Logger.Error(err.Error())
-		os.Exit(1)
-	}
+	// ticker for periodic run of measurements fetching
+	// and calculating temperatures
+	// ticks are sent every hour
+	ticker := time.NewTicker(time.Minute)
+	// defer the graceful
+	defer ticker.Stop()
 
-	// calculate and save temperature values
-	err = models.CalculateAndSaveTemperaturesAllUnprocessed(
-		appContext,
-		&appConfig,
-	)
-	if err != nil {
-		appConfig.Logger.Error(err.Error())
-		os.Exit(1)
-	}
+	// goroutine to run measurement and calculation functions
+	// on every tick from the ticker channel
+	go func() {
+		for t := range ticker.C {
+			// server time is UTC
+			// checking for tick at 05:00 UTC (10:30 IST)
+			if t.Hour() == 5 && t.Minute() == 0 {
+				// call APIs for measurement
+				err = models.GetAndSaveMeasurementsFromAPISingleRun(
+					appContext,
+					&appConfig,
+				)
+				if err != nil {
+					appConfig.Logger.Error(err.Error())
+					os.Exit(1)
+				}
+
+				// calculate and save temperature values
+				err = models.CalculateAndSaveTemperaturesAllUnprocessed(
+					appContext,
+					&appConfig,
+				)
+				if err != nil {
+					appConfig.Logger.Error(err.Error())
+					os.Exit(1)
+				}
+			}
+		}
+	}()
+
+	// TODO
+	// add HTTP server code here
 }
