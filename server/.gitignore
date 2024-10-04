@@ -6,5 +6,5 @@ env/
 env-python3/
 
 # build/executables
-main
-server
+/bin/api
+/bin/cron
