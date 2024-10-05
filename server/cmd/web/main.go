@@ -38,7 +38,9 @@ func main() {
 	//
 	// config
 	//
-	// initialize new configuration
+	app.config = &config.Config{}
+	// initialize the configurations of the logger, environment and
+	// database
 	err := app.config.New(ctx)
 	if err != nil {
 		app.config.Logger.Error(err.Error())
