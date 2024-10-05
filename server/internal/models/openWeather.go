@@ -5,12 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/kelaaditya/zomato-weather-union/server/internal"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kelaaditya/zomato-weather-union/server/internal/utilities"
 )
+
+// model struct for open weather map
+type OpenWeatherMapModel struct {
+	DB *pgxpool.Pool
+}
 
 // type to hold a "measurement" from open weather map
 // see the schema structure for the table "measurements_open_weather_map"
@@ -60,8 +66,9 @@ type OpenWeatherMapObjectSubWeather struct {
 }
 
 // function for calling the Open Weather API
-func CallAPIOpenWeatherMap(
-	appConfig *internal.AppConfig,
+func (model OpenWeatherMapModel) CallAPIOpenWeatherMap(
+	APIBaseURL string,
+	APIKey string,
 	station *WeatherUnionStation,
 	runID uuid.UUID,
 ) (OpenWeatherMapMeasurement, error) {
@@ -79,11 +86,11 @@ func CallAPIOpenWeatherMap(
 		"lat":     station.Latitude,
 		"lon":     station.Longitude,
 		"exclude": "minutely,hourly,daily,alerts",
-		"appid":   appConfig.ENVVariables.APIKeyOpenWeatherMap,
+		"appid":   APIKey,
 	}
 	// call utility function to build URL string
 	URLString, err := utilities.BuildURLString(
-		appConfig.ENVVariables.URLBaseOpenWeatherMap,
+		APIBaseURL,
 		"onecall",
 		mapQueryParameters,
 	)
@@ -134,9 +141,8 @@ func CallAPIOpenWeatherMap(
 
 // function to store a slice of measurements to the database
 // in bulk insert
-func SaveMeasurementOpenWeatherMap(
+func (model OpenWeatherMapModel) SaveMeasurementOpenWeatherMap(
 	ctx context.Context,
-	appConfig *internal.AppConfig,
 	sliceMeasurementsOpenWeatherMap []OpenWeatherMapMeasurement,
 ) error {
 	// create a slice containing a slice of any types
@@ -176,9 +182,14 @@ func SaveMeasurementOpenWeatherMap(
 		}
 	}
 
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
 	// create a bulk insert query
-	_, err := appConfig.DBPool.CopyFrom(
-		ctx,
+	_, err := model.DB.CopyFrom(
+		ctxWT,
 		pgx.Identifier{"measurements_open_weather_map"},
 		[]string{
 			"measurement_id",

@@ -5,12 +5,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/kelaaditya/zomato-weather-union/server/internal"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kelaaditya/zomato-weather-union/server/internal/utilities"
 )
+
+// model struct for weather union
+type WeatherUnionModel struct {
+	DB *pgxpool.Pool
+}
 
 // type to hold a "measurement" from weather union
 // see the schema structure for the table "measurement_weather_union"
@@ -53,8 +59,9 @@ type WeatherUnionStation struct {
 }
 
 // get weather data from locality (weather union)
-func CallAPIWeatherUnionLocality(
-	appConfig *internal.AppConfig,
+func (model WeatherUnionModel) CallAPIWeatherUnionLocality(
+	APIBaseURL string,
+	APIKey string,
 	station *WeatherUnionStation,
 	runID uuid.UUID,
 ) (WeatherUnionMeasurement, error) {
@@ -73,7 +80,7 @@ func CallAPIWeatherUnionLocality(
 	}
 	// call utility function to build URL string
 	URLString, err := utilities.BuildURLString(
-		appConfig.ENVVariables.URLBaseWeatherUnion,
+		APIBaseURL,
 		"get_locality_weather_data",
 		mapQueryParameters,
 	)
@@ -92,7 +99,7 @@ func CallAPIWeatherUnionLocality(
 	// add zomato API key to header
 	request.Header.Add(
 		"X-Zomato-Api-Key",
-		appConfig.ENVVariables.APIKeyWeatherUnion,
+		APIKey,
 	)
 	// initialize new http client
 	var client http.Client = http.Client{}
@@ -137,9 +144,8 @@ func CallAPIWeatherUnionLocality(
 
 // function to store a slice of measurements to the database
 // in one bulk insert
-func SaveMeasurementsWeatherUnion(
+func (model WeatherUnionModel) SaveMeasurementsWeatherUnion(
 	ctx context.Context,
-	appConfig *internal.AppConfig,
 	sliceMeasurementsWeatherUnion []WeatherUnionMeasurement,
 ) error {
 	// create a slice containing a slice of any types
@@ -167,9 +173,14 @@ func SaveMeasurementsWeatherUnion(
 		}
 	}
 
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
 	// create a bulk insert query
-	_, err := appConfig.DBPool.CopyFrom(
-		ctx,
+	_, err := model.DB.CopyFrom(
+		ctxWT,
 		pgx.Identifier{"measurements_weather_union"},
 		[]string{
 			"measurement_id",
@@ -198,10 +209,12 @@ func SaveMeasurementsWeatherUnion(
 }
 
 // function to get Weather Union weather stations data (all)
-func GetWeatherStationsAllWeatherUnion(
+func (model WeatherUnionModel) GetWeatherStationsAllWeatherUnion(
 	ctx context.Context,
-	appConfig *internal.AppConfig,
-) ([]WeatherUnionStation, error) {
+) (
+	[]WeatherUnionStation,
+	error,
+) {
 	// placeholder slice
 	var stationDataSlice []WeatherUnionStation
 
@@ -220,8 +233,13 @@ func GetWeatherStationsAllWeatherUnion(
 	LIMIT 10;
 	`
 
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
 	// prepare the query
-	rows, err := appConfig.DBPool.Query(ctx, queryString)
+	rows, err := model.DB.Query(ctxWT, queryString)
 	if err != nil {
 		return nil, err
 	}

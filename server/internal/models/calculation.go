@@ -5,13 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/kelaaditya/zomato-weather-union/server/internal"
-	"golang.org/x/sync/errgroup"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// model struct for calculations
+type CalculationModel struct {
+	DB *pgxpool.Pool
+}
 
 // this type contains all parameters that are needed in
 // one row entry in the calculations_temperature table
@@ -30,90 +34,9 @@ type Temperature struct {
 	WetBulbTemperature  float64 `json:"temperature_wet_bulb"`
 }
 
-// calculate all unprocessed wet bulb temperature values
-// get the unprocessed data and then return a slice containing the values
-func CalculateAndSaveTemperaturesAllUnprocessed(
-	ctx context.Context,
-	appConfig *internal.AppConfig,
-) error {
-	// get all unprocessed measurements
-	sliceMeasurementsUnprocessed, err := GetUnprocessedDataForCalculationsTemperature(
-		ctx,
-		appConfig,
-	)
-	if err != nil {
-		return err
-	}
-
-	// create a slice to append calculations to
-	var sliceCalculationsSuccessful []CalculationTemperature
-
-	// create a wait group
-	var wgCalculations errgroup.Group
-	// create a mutex object
-	var mutex sync.Mutex
-
-	// iterate over measurements
-	for _, measurement := range sliceMeasurementsUnprocessed {
-		wgCalculations.Go(func() error {
-			// carry out calculations over a single measurement
-			calculation, err := CalculateTemperatureSinglePass(measurement)
-			if err != nil {
-				return err
-			}
-
-			// append new successful calculation to slice of all successful
-			// calculations
-			// lock and unlock slice while appending
-			mutex.Lock()
-			sliceCalculationsSuccessful = append(
-				sliceCalculationsSuccessful,
-				calculation,
-			)
-			mutex.Unlock()
-
-			// return nil if okay
-			return nil
-		})
-	}
-
-	// wait until all goroutines are completed
-	// return the first non-nil error
-	if err := wgCalculations.Wait(); err != nil {
-		// do not return an error here
-		// as we want to continue the flag setting for those that
-		// have been processed
-		appConfig.Logger.Error(err.Error())
-	}
-
-	// save calculations
-	err = SaveCalculationsTemperatures(
-		ctx,
-		appConfig,
-		sliceCalculationsSuccessful,
-	)
-	if err != nil {
-		return err
-	}
-
-	// set flag is_processed for weather union measurements
-	err = SetFlagsTemperature(
-		ctx,
-		appConfig,
-		sliceMeasurementsUnprocessed,
-		sliceCalculationsSuccessful,
-	)
-	if err != nil {
-		return err
-	}
-
-	// return nil if all okay
-	return nil
-}
-
 // run the python script from the fetched
 // data of one instance
-func CalculateTemperatureSinglePass(
+func (model CalculationModel) CalculateTemperatureFromSingleMeasurement(
 	measurement MeasurementTemperature,
 ) (CalculationTemperature, error) {
 	// initialize calculationID as UUID for this calculation
@@ -168,9 +91,8 @@ func CalculateTemperatureSinglePass(
 
 // save the successful wet bulb and dew point temperature calculations
 // to the database
-func SaveCalculationsTemperatures(
+func (model CalculationModel) SaveCalculationsTemperatures(
 	ctx context.Context,
-	appConfig *internal.AppConfig,
 	sliceCalculationsSuccessful []CalculationTemperature,
 ) error {
 	// create a slice containing a slice of any types
@@ -192,9 +114,14 @@ func SaveCalculationsTemperatures(
 		}
 	}
 
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
 	// create a bulk insert query
-	_, err := appConfig.DBPool.CopyFrom(
-		ctx,
+	_, err := model.DB.CopyFrom(
+		ctxWT,
 		pgx.Identifier{"calculations_temperature"},
 		[]string{
 			"calculation_id",
@@ -218,9 +145,8 @@ func SaveCalculationsTemperatures(
 
 // function to set is_processed and is_successful
 // for weather union and open weather map
-func SetFlagsTemperature(
+func (model CalculationModel) SetFlagsTemperature(
 	ctx context.Context,
-	appConfig *internal.AppConfig,
 	sliceMeasurementsUnprocessed []MeasurementTemperature,
 	sliceCalculationsSuccessful []CalculationTemperature,
 ) error {
@@ -341,9 +267,14 @@ func SetFlagsTemperature(
 		queryArgumentsIsSuccessfulOpenWeatherMap,
 	)
 
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
 	// send the batch query via the connection pool
-	var batchResults pgx.BatchResults = appConfig.DBPool.SendBatch(
-		ctx,
+	var batchResults pgx.BatchResults = model.DB.SendBatch(
+		ctxWT,
 		queryBatch,
 	)
 

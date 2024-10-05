@@ -1,0 +1,26 @@
+{{define "base"}}
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/ico" href="/static/images/favicon.ico" />
+		<meta name="description" content="Calculations" />
+
+		<!-- og tags -->
+		<meta property="og:type" content="article" />
+		<meta property="og:title" content="Calculations" />
+		<meta property="og:image" content="/static/images/logo-500x500.png" />
+
+		<!-- title -->
+		<title>Calculations</title>
+
+		<!-- stylesheet -->
+		 <link rel="stylesheet" href="/static/css/main.css" type="text/css" />
+	</head>
+	<body>
+		{{template "navbar" .}}
+		{{template "main" .}}
+	</body>
+</html>
+{{end}}

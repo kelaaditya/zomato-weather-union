@@ -3,14 +3,17 @@ package models
 import (
 	"context"
 	"fmt"
-	"strconv"
-	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
-	"github.com/kelaaditya/zomato-weather-union/server/internal"
-	"golang.org/x/sync/errgroup"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// model struct for measurements
+type MeasurementModel struct {
+	DB *pgxpool.Pool
+}
 
 // structure of measurement data needed for wet bulb calculations
 type MeasurementTemperature struct {
@@ -23,137 +26,9 @@ type MeasurementTemperature struct {
 	Pressure                    float64   `json:"pressure"`
 }
 
-// carry out a single run of measurements over all the
-// weather stations from weather union
-func GetAndSaveMeasurementsFromAPISingleRun(
-	ctx context.Context,
-	appConfig *internal.AppConfig,
-) error {
-	// initialize runID as UUID for this calculation
-	runID, err := uuid.NewRandom()
-	if err != nil {
-		return err
-	}
-
-	// log runID when started
-	appConfig.Logger.Info("run started.", "runID", runID.String())
-
-	// get all weather station data from weather union
-	sliceStationsWeatherUnion, err := GetWeatherStationsAllWeatherUnion(
-		ctx,
-		appConfig,
-	)
-	if err != nil {
-		return err
-	}
-
-	// create a slice to append measurements from weather union
-	var sliceMeasurementsWeatherUnion []WeatherUnionMeasurement
-	// create a slice to append measurements from weather union
-	var sliceMeasurementsOpenWeatherMap []OpenWeatherMapMeasurement
-
-	// create a wait group
-	var wgMeasurements errgroup.Group
-	// create a mutex object
-	var mutex sync.Mutex
-
-	// iterate over all stations
-	for _, station := range sliceStationsWeatherUnion {
-		wgMeasurements.Go(func() error {
-			// carry out API call to weather union
-			measurementWeatherUnion, err := CallAPIWeatherUnionLocality(
-				appConfig,
-				&station,
-				runID,
-			)
-			if err != nil {
-				return err
-			}
-
-			// carry out API call to open weather map
-			measurementOpenWeatherMap, err := CallAPIOpenWeatherMap(
-				appConfig,
-				&station,
-				runID,
-			)
-			if err != nil {
-				return err
-			}
-
-			// append new measurements to corresponding slices
-			// lock and unlock slices while appending
-			mutex.Lock()
-			sliceMeasurementsWeatherUnion = append(
-				sliceMeasurementsWeatherUnion,
-				measurementWeatherUnion,
-			)
-			sliceMeasurementsOpenWeatherMap = append(
-				sliceMeasurementsOpenWeatherMap,
-				measurementOpenWeatherMap,
-			)
-			mutex.Unlock()
-
-			// return nil if okay
-			return nil
-		})
-	}
-
-	// wait until all goroutines are completed
-	// return the first non-nil error
-	if err := wgMeasurements.Wait(); err != nil {
-		// do not return an error here
-		// as we want to continue the flag setting for those that
-		// have been processed
-		appConfig.Logger.Error(err.Error())
-	}
-
-	// log the count of measurements received from weather union
-	appConfig.Logger.Info(
-		"measurements gathered from weather union",
-		"total",
-		strconv.Itoa(len(sliceMeasurementsWeatherUnion)),
-	)
-	// log the count of measurements received from open weather map
-	appConfig.Logger.Info(
-		"measurements gathered from open weather map",
-		"total",
-		strconv.Itoa(len(sliceMeasurementsOpenWeatherMap)),
-	)
-
-	// save run ID
-	err = SaveMeasurementRun(ctx, appConfig, runID)
-	if err != nil {
-		return err
-	}
-
-	// save measurements from weather union
-	err = SaveMeasurementsWeatherUnion(
-		ctx,
-		appConfig,
-		sliceMeasurementsWeatherUnion,
-	)
-	if err != nil {
-		return err
-	}
-
-	// save measurement from open weather map
-	err = SaveMeasurementOpenWeatherMap(
-		ctx,
-		appConfig,
-		sliceMeasurementsOpenWeatherMap,
-	)
-	if err != nil {
-		return err
-	}
-
-	// return nil if all okay
-	return nil
-}
-
 // function to save the measurement run ID
-func SaveMeasurementRun(
+func (model MeasurementModel) SaveMeasurementRun(
 	ctx context.Context,
-	appConfig *internal.AppConfig,
 	runID uuid.UUID,
 ) error {
 	// postgresql query string
@@ -167,8 +42,13 @@ func SaveMeasurementRun(
 		"runID": runID,
 	}
 
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
 	// executing the query string with the named arguments
-	_, err := appConfig.DBPool.Exec(ctx, queryString, queryArguments)
+	_, err := model.DB.Exec(ctxWT, queryString, queryArguments)
 	if err != nil {
 		return fmt.Errorf(
 			"error in inserting measurement run data into postgresql: %w",
@@ -181,9 +61,8 @@ func SaveMeasurementRun(
 
 // get all the unprocessed measurement values
 // from both weather union and open weather map
-func GetUnprocessedDataForCalculationsTemperature(
+func (model MeasurementModel) GetUnprocessedDataForCalculationsTemperature(
 	ctx context.Context,
-	appConfig *internal.AppConfig,
 ) ([]MeasurementTemperature, error) {
 	// postgresql query string
 	var queryString string = `
@@ -208,8 +87,13 @@ func GetUnprocessedDataForCalculationsTemperature(
 		mowm.pressure IS NOT NULL;
 	`
 
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
 	// prepare the query
-	rows, err := appConfig.DBPool.Query(ctx, queryString)
+	rows, err := model.DB.Query(ctxWT, queryString)
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,35 @@
+/*
+ * page - base
+*/
+html {
+    font-family: system-ui, sans-serif;
+    background: white;
+}
+body {
+    margin: 0;
+}
+nav {
+    position: sticky;
+    top: 0;
+    background-color: #002036;
+    color: white;
+    padding-top: 20px;
+    padding-bottom: 20px;
+    text-align: center;
+}
+.navbar {
+    margin: auto;
+    width: 1200px;
+    max-width: calc(100% - 2rem);
+    text-align: left;
+}
+.logo {
+    display: inline-block;
+}
+.logo img {
+    max-height: 35px;
+}
+
+/*
+ * page - home
+*/
