@@ -24,14 +24,25 @@ type CalculationTemperature struct {
 	MeasurementIDWeatherUnion   uuid.UUID
 	MeasurementIDOpenWeatherMap uuid.UUID
 	Method                      string
-	DewPointTemperature         float64
-	WetBulbTemperature          float64
+	TemperatureDewPoint         float64
+	TemperatureWetBulb          float64
 }
 
 // struct holding dew point and wet bulb temperature calculations
 type Temperature struct {
-	DewPointTemperature float64 `json:"temperature_dew_point"`
-	WetBulbTemperature  float64 `json:"temperature_wet_bulb"`
+	DewPoint float64 `json:"temperature_dew_point"`
+	WetBulb  float64 `json:"temperature_wet_bulb"`
+}
+
+// type to hold relevant data for display on front end
+type CalculationTemperatureWithStationDetails struct {
+	RunID               uuid.UUID `json:"run_id"`
+	LocalityID          string    `json:"locality_id"`
+	LocalityName        string    `json:"locality_name"`
+	Latitude            string    `json:"latitude"`
+	Longitude           string    `json:"longitude"`
+	TemperatureDewPoint float64   `json:"temperature_dew_point"`
+	TemperatureWetBulb  float64   `json:"temperature_wet_bulb"`
 }
 
 // run the python script from the fetched
@@ -82,8 +93,8 @@ func (model CalculationModel) CalculateTemperatureFromSingleMeasurement(
 		MeasurementIDWeatherUnion:   measurement.MeasurementIDWeatherUnion,
 		MeasurementIDOpenWeatherMap: measurement.MeasurementIDOpenWeatherMap,
 		Method:                      "metpy-with-open-weather-map",
-		DewPointTemperature:         temperature.DewPointTemperature,
-		WetBulbTemperature:          temperature.WetBulbTemperature,
+		TemperatureDewPoint:         temperature.DewPoint,
+		TemperatureWetBulb:          temperature.WetBulb,
 	}
 
 	return calculation, nil
@@ -109,8 +120,8 @@ func (model CalculationModel) SaveCalculationsTemperatures(
 			calculation.CalculationID,
 			calculation.MeasurementIDWeatherUnion,
 			calculation.Method,
-			calculation.DewPointTemperature,
-			calculation.WetBulbTemperature,
+			calculation.TemperatureDewPoint,
+			calculation.TemperatureWetBulb,
 		}
 	}
 
@@ -321,4 +332,64 @@ func (model CalculationModel) SetFlagsTemperature(
 
 	// return nil if all okay
 	return nil
+}
+
+// get the temperature calculations for display
+// from a single run
+func (model CalculationModel) GetCalculationsTemperatureWithStationDetails(
+	ctx context.Context,
+) (
+	[]CalculationTemperatureWithStationDetails,
+	error,
+) {
+	// placeholder slice
+	var sliceCalculations []CalculationTemperatureWithStationDetails
+
+	// query string
+	var queryString string = `
+	SELECT
+		ROUND(ct.temperature_wet_bulb::NUMERIC, 3)::FLOAT
+			AS temperature_wet_bulb,
+		ROUND(ct.temperature_dew_point::NUMERIC, 3)::FLOAT
+			AS temperature_dew_point,
+		mwu.run_id,
+		wus.locality_id,
+		wus.locality_name,
+		ST_X(wus.location::geometry) AS longitude,
+		ST_Y(wus.location::geometry) AS latitude
+	FROM calculations_temperature ct
+	JOIN measurements_weather_union mwu
+	ON ct.measurement_id_weather_union = mwu.measurement_id
+	JOIN weather_union_stations wus
+	ON mwu.weather_station_id = wus.weather_station_id
+	WHERE run_id = (
+		SELECT run_id
+		FROM measurement_runs
+		ORDER BY time_stamp DESC
+		LIMIT 1
+	);
+	`
+
+	// create a 5 second timeout context
+	ctxWT, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancellation of the timeout
+	defer cancel()
+
+	// prepare the query
+	rows, err := model.DB.Query(ctxWT, queryString)
+	if err != nil {
+		return nil, err
+	}
+
+	// run the query and collect rows
+	sliceCalculations, err = pgx.CollectRows(
+		rows,
+		pgx.RowToStructByName[CalculationTemperatureWithStationDetails],
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// return slice of calculations for display
+	return sliceCalculations, nil
 }

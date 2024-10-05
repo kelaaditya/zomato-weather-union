@@ -7,13 +7,14 @@ import (
 // set common headers
 func (middleware *Middleware) CommonHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO
 		// set CSP
-		w.Header().Set(
-			"Content-Security-Policy",
-			`default-src 'self';
-				style-src 'self' fonts.googleapis.com;
-				font-src fonts.gstatic.com`,
-		)
+		// w.Header().Set(
+		// 	"Content-Security-Policy",
+		// 	`default-src 'self';
+		// 		style-src 'self' fonts.googleapis.com;
+		// 		font-src fonts.gstatic.com`,
+		// )
 
 		w.Header().Set("Referrer-Policy", "origin-when-cross-origin")
 		w.Header().Set("X-Content-Type-Options", "nosniff")

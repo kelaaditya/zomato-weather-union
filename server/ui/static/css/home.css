@@ -1,0 +1,12 @@
+/*
+ * leaflet map (open street maps)
+ */
+#map {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    height: calc(100vh - 100px);
+    width: 1200px;
+    max-width: calc(100% - 2rem);
+    text-align: left;
+}

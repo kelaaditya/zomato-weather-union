@@ -11,10 +11,10 @@ body {
 nav {
     position: sticky;
     top: 0;
-    background-color: #002036;
+    background-color: #ffbd59;
     color: white;
-    padding-top: 20px;
-    padding-bottom: 20px;
+    padding-top: 10px;
+    padding-bottom: 10px;
     text-align: center;
 }
 .navbar {
@@ -27,9 +27,5 @@ nav {
     display: inline-block;
 }
 .logo img {
-    max-height: 35px;
+    max-height: 50px;
 }
-
-/*
- * page - home
-*/

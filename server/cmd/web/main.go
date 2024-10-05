@@ -18,7 +18,6 @@ import (
 // application level configurations and operations
 type application struct {
 	config      *config.Config
-	models      *models.Models
 	handlers    *handlers.Handler
 	middlewares *middlewares.Middleware
 }
@@ -53,7 +52,7 @@ func main() {
 	//
 	// models
 	//
-	app.models = &models.Models{
+	models := &models.Models{
 		WeatherUnion:   &models.WeatherUnionModel{DB: app.config.DB},
 		OpenWeatherMap: &models.OpenWeatherMapModel{DB: app.config.DB},
 		Measurement:    &models.MeasurementModel{DB: app.config.DB},
@@ -76,6 +75,7 @@ func main() {
 	app.handlers = &handlers.Handler{
 		Logger:        app.config.Logger,
 		TemplateCache: HTMLTemplateCache,
+		Models:        models,
 	}
 
 	//

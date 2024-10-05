@@ -216,7 +216,7 @@ func (model WeatherUnionModel) GetWeatherStationsAllWeatherUnion(
 	error,
 ) {
 	// placeholder slice
-	var stationDataSlice []WeatherUnionStation
+	var sliceStationData []WeatherUnionStation
 
 	// query string
 	var queryString string = `
@@ -245,7 +245,7 @@ func (model WeatherUnionModel) GetWeatherStationsAllWeatherUnion(
 	}
 
 	// run the query and collect rows
-	stationDataSlice, err = pgx.CollectRows(
+	sliceStationData, err = pgx.CollectRows(
 		rows,
 		pgx.RowToStructByName[WeatherUnionStation],
 	)
@@ -255,5 +255,5 @@ func (model WeatherUnionModel) GetWeatherStationsAllWeatherUnion(
 
 	// return slice of weather station structs
 	// and nil error
-	return stationDataSlice, nil
+	return sliceStationData, nil
 }
