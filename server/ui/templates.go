@@ -2,8 +2,6 @@ package ui
 
 import "html/template"
 
-type AppTemplateCache = map[string]*template.Template
-
 // cache of HTML template files
 func CreateHTMLTemplateCache() (map[string]*template.Template, error) {
 	// initialize cache (map)

@@ -15,10 +15,10 @@ type Config struct {
 
 func (config *Config) New(ctx context.Context) error {
 	// initialize logger
-	config.InitializeLogger()
+	config.initializeLogger()
 
 	// initialize environment
-	err := config.InitializeEnvironment()
+	err := config.initializeEnvironment()
 	if err != nil {
 		return err
 	}
@@ -26,7 +26,7 @@ func (config *Config) New(ctx context.Context) error {
 	// get database URL from environment
 	var databaseURL string = config.Environment.DatabaseURL
 	// initialize database
-	err = config.InitializeDatabase(ctx, databaseURL)
+	err = config.initializeDatabase(ctx, databaseURL)
 	if err != nil {
 		return err
 	}

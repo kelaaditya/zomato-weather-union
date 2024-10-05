@@ -10,7 +10,7 @@ import (
 
 // create a database pool from context and database URL
 // and return a pointer to the pool
-func (config *Config) InitializeDatabase(
+func (config *Config) initializeDatabase(
 	ctx context.Context,
 	databaseURL string,
 ) error {

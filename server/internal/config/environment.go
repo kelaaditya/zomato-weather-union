@@ -18,7 +18,7 @@ type Environment struct {
 
 // load environment variable values
 // from .env to a struct and then return
-func (config *Config) InitializeEnvironment() error {
+func (config *Config) initializeEnvironment() error {
 	// load environment variables
 	err := godotenv.Load()
 	if err != nil {
@@ -26,18 +26,18 @@ func (config *Config) InitializeEnvironment() error {
 	}
 
 	// struct for storing values
-	var envStruct Environment
+	var newEnvironment Environment
 	// get environment variables and
 	// add them to the struct
-	envStruct.Port = os.Getenv("PORT")
-	envStruct.DatabaseURL = os.Getenv("DATABASE_URL")
-	envStruct.URLBaseWeatherUnion = os.Getenv("URL_BASE_WEATHER_UNION")
-	envStruct.URLBaseOpenWeatherMap = os.Getenv("URL_BASE_OPEN_WEATHER_MAP")
-	envStruct.APIKeyWeatherUnion = os.Getenv("API_KEY_WEATHER_UNION")
-	envStruct.APIKeyOpenWeatherMap = os.Getenv("API_KEY_OPEN_WEATHER_MAP")
+	newEnvironment.Port = os.Getenv("PORT")
+	newEnvironment.DatabaseURL = os.Getenv("DATABASE_URL")
+	newEnvironment.URLBaseWeatherUnion = os.Getenv("URL_BASE_WEATHER_UNION")
+	newEnvironment.URLBaseOpenWeatherMap = os.Getenv("URL_BASE_OPEN_WEATHER_MAP")
+	newEnvironment.APIKeyWeatherUnion = os.Getenv("API_KEY_WEATHER_UNION")
+	newEnvironment.APIKeyOpenWeatherMap = os.Getenv("API_KEY_OPEN_WEATHER_MAP")
 
 	// configured environment variables struct
-	config.Environment = &envStruct
+	config.Environment = &newEnvironment
 
 	// return nil if all okay
 	return nil

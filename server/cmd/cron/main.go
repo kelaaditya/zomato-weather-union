@@ -12,38 +12,39 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+// application level configurations and operations
 type application struct {
 	config *config.Config
 	models *models.Models
 }
 
 func main() {
+	//
+	var app application
+
 	// create app level background context
 	var ctx context.Context = context.Background()
 
-	// create new configuration struct
-	config := config.Config{}
-	err := config.New(ctx)
+	//
+	// config
+	//
+	err := app.config.New(ctx)
 	if err != nil {
-		config.Logger.Error(err.Error())
+		app.config.Logger.Error(err.Error())
 		// force exit on error
 		os.Exit(1)
 	}
 	// close the postgresql connection pool on function close
-	defer config.DB.Close()
+	defer app.config.DB.Close()
 
-	// create new models struct
-	models := models.Models{
-		WeatherUnion:   &models.WeatherUnionModel{DB: config.DB},
-		OpenWeatherMap: &models.OpenWeatherMapModel{DB: config.DB},
-		Measurement:    &models.MeasurementModel{DB: config.DB},
-		Calculation:    &models.CalculationModel{DB: config.DB},
-	}
-
-	// create new application struct
-	app := &application{
-		config: &config,
-		models: &models,
+	//
+	// models
+	//
+	app.models = &models.Models{
+		WeatherUnion:   &models.WeatherUnionModel{DB: app.config.DB},
+		OpenWeatherMap: &models.OpenWeatherMapModel{DB: app.config.DB},
+		Measurement:    &models.MeasurementModel{DB: app.config.DB},
+		Calculation:    &models.CalculationModel{DB: app.config.DB},
 	}
 
 	err = app.GetAndSaveMeasurementsFromAPISingleRun(ctx)
