@@ -1,3 +1,30 @@
+//
+// process data
+//
+// 'data' variable is loaded with data fetched from the server
+const dataProcessed = data.map((element) => {
+    // convert timestamp from server to locale string
+    const timeOfCalculation = new Date(element.time_stamp_calculation)
+    const timeString = timeOfCalculation.toLocaleString()
+
+    // append new time string to data element
+    element.time_string = timeString
+
+    return element
+});
+
+//
+// information
+//
+let information = document.getElementById("information")
+information.textContent = `
+    Showing ${dataProcessed.length} measurements below.\n
+    The time of calculation of this run was approximately ${dataProcessed[0].time_string} (MM-DD-YYYY).
+`
+
+//
+// map
+//
 // map centered on India
 let map = L.map("map").setView([20, 78], 5);
 
@@ -8,8 +35,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 
-// data variable is loaded with data fetched from the server
-displayDataAsCircles(data)
+displayDataAsCircles(dataProcessed)
 
 // function to set up measurements as circles via Leaflet
 function displayDataAsCircles(dataArray) {
@@ -19,7 +45,8 @@ function displayDataAsCircles(dataArray) {
             locality_name,
             longitude,
             latitude,
-            temperature_wet_bulb
+            temperature_wet_bulb,
+            time_string
         } = dataArray[i];
 
         // colour based in temperature
@@ -44,7 +71,8 @@ function displayDataAsCircles(dataArray) {
             <div>
                 <strong>Locality Name:</strong> ${locality_name}<br/>
                 <strong>Locality ID:</strong> ${locality_id}<br/>
-                <strong>Wet Bulb Temperature:</strong> ${temperature_wet_bulb}
+                <strong>Wet Bulb Temperature:</strong> ${temperature_wet_bulb}<br/>
+                <strong>Time:</strong> ${time_string}
             </div>`;
 
             // bind popup to the marker and open it

@@ -1,12 +1,24 @@
 /*
+ * information section (above map)
+ */
+#information {
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    width: 1200px;
+    max-width: calc(100% - 2rem);
+    text-align: left;
+    font-size: 18px;
+}
+/*
  * leaflet map (open street maps)
  */
 #map {
     margin-left: auto;
     margin-right: auto;
     margin-top: 10px;
-    height: calc(100vh - 100px);
+    height: calc(100vh - 175px);
     width: 1200px;
     max-width: calc(100% - 2rem);
-    text-align: left;
 }

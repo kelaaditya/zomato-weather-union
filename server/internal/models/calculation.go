@@ -36,13 +36,14 @@ type Temperature struct {
 
 // type to hold relevant data for display on front end
 type CalculationTemperatureWithStationDetails struct {
-	RunID               uuid.UUID `json:"run_id"`
-	LocalityID          string    `json:"locality_id"`
-	LocalityName        string    `json:"locality_name"`
-	Latitude            string    `json:"latitude"`
-	Longitude           string    `json:"longitude"`
-	TemperatureDewPoint float64   `json:"temperature_dew_point"`
-	TemperatureWetBulb  float64   `json:"temperature_wet_bulb"`
+	RunID                uuid.UUID `db:"run_id" json:"run_id"`
+	LocalityID           string    `db:"locality_id" json:"locality_id"`
+	LocalityName         string    `db:"locality_name" json:"locality_name"`
+	Latitude             string    `db:"latitude" json:"latitude"`
+	Longitude            string    `db:"longitude" json:"longitude"`
+	TemperatureDewPoint  float64   `db:"temperature_dew_point" json:"temperature_dew_point"`
+	TemperatureWetBulb   float64   `db:"temperature_wet_bulb" json:"temperature_wet_bulb"`
+	CalculationTimeStamp time.Time `db:"time_stamp_calculation" json:"time_stamp_calculation"`
 }
 
 // run the python script from the fetched
@@ -352,6 +353,7 @@ func (model CalculationModel) GetCalculationsTemperatureWithStationDetails(
 			AS temperature_wet_bulb,
 		ROUND(ct.temperature_dew_point::NUMERIC, 3)::FLOAT
 			AS temperature_dew_point,
+		ct.time_stamp AS time_stamp_calculation,
 		mwu.run_id,
 		wus.locality_id,
 		wus.locality_name,

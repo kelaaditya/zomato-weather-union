@@ -24,11 +24,13 @@ func (handler *Handler) Home() http.HandlerFunc {
 		if err != nil {
 			// log error
 			handler.Logger.Error(
-				"no data found when fetching for calculations",
+				"error in fetching calculations with station data",
 				"method",
 				HTTPMethod,
 				"uri",
 				requestURI,
+				"error",
+				err.Error(),
 			)
 			// error with built-in status
 			http.Error(
@@ -68,6 +70,8 @@ func (handler *Handler) Home() http.HandlerFunc {
 				HTTPMethod,
 				"uri",
 				requestURI,
+				"error",
+				err.Error(),
 			)
 			// error with built-in status
 			http.Error(
@@ -118,6 +122,8 @@ func (handler *Handler) Home() http.HandlerFunc {
 				HTTPMethod,
 				"uri",
 				requestURI,
+				"error",
+				err.Error(),
 			)
 			// error with built-in status
 			http.Error(
@@ -139,6 +145,8 @@ func (handler *Handler) Home() http.HandlerFunc {
 				HTTPMethod,
 				"uri",
 				requestURI,
+				"error",
+				err.Error(),
 			)
 			// error with built-in status
 			http.Error(
