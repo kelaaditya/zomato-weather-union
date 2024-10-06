@@ -19,7 +19,7 @@ const dataProcessed = data.map((element) => {
 let information = document.getElementById("information")
 information.textContent = `
     Showing ${dataProcessed.length} measurements below.\n
-    The time of calculation of this run was approximately ${dataProcessed[0].time_string} (MM-DD-YYYY).
+    The time of calculation of this run was approximately ${dataProcessed[0].time_string} (DD-MM-YYYY).
 `
 
 //
