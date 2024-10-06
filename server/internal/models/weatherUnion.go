@@ -229,8 +229,7 @@ func (model WeatherUnionModel) GetWeatherStationsAllWeatherUnion(
 		ST_Y(location::geometry) AS latitude,
 		device_type,
 		device_type_integer
-	FROM weather_union_stations
-	LIMIT 10;
+	FROM weather_union_stations;
 	`
 
 	// create a 5 second timeout context
