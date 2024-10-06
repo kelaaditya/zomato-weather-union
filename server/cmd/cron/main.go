@@ -5,6 +5,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/kelaaditya/zomato-weather-union/server/internal/config"
@@ -90,66 +91,63 @@ func (app *application) GetAndSaveMeasurementsFromAPISingleRun(
 
 	// create a slice to append measurements from weather union
 	var sliceMeasurementsWeatherUnion []models.WeatherUnionMeasurement
-	// create a slice to append measurements from weather union
+	// create a slice to append measurements from open weather map
 	var sliceMeasurementsOpenWeatherMap []models.OpenWeatherMapMeasurement
-
-	// create a wait group
-	var wgMeasurements errgroup.Group
-	// create a mutex object
-	var mutex sync.Mutex
 
 	// iterate over all stations
 	for _, station := range sliceStationsWeatherUnion {
-		wgMeasurements.Go(func() error {
-			// carry out API call to weather union
-			measurementWeatherUnion, err :=
-				app.models.WeatherUnion.CallAPIWeatherUnionLocality(
-					app.config.Environment.URLBaseWeatherUnion,
-					app.config.Environment.APIKeyWeatherUnion,
-					&station,
-					runID,
-				)
-			if err != nil {
-				return err
-			}
-
-			// carry out API call to open weather map
-			measurementOpenWeatherMap, err :=
-				app.models.OpenWeatherMap.CallAPIOpenWeatherMap(
-					app.config.Environment.URLBaseOpenWeatherMap,
-					app.config.Environment.APIKeyOpenWeatherMap,
-					&station,
-					runID,
-				)
-			if err != nil {
-				return err
-			}
-
-			// append new measurements to corresponding slices
-			// lock and unlock slices while appending
-			mutex.Lock()
-			sliceMeasurementsWeatherUnion = append(
-				sliceMeasurementsWeatherUnion,
-				measurementWeatherUnion,
+		// carry out API call to weather union
+		measurementWeatherUnion, err :=
+			app.models.WeatherUnion.CallAPIWeatherUnionLocality(
+				app.config.Environment.URLBaseWeatherUnion,
+				app.config.Environment.APIKeyWeatherUnion,
+				&station,
+				runID,
 			)
-			sliceMeasurementsOpenWeatherMap = append(
-				sliceMeasurementsOpenWeatherMap,
-				measurementOpenWeatherMap,
+		if err != nil {
+			// log error
+			// do not return
+			app.config.Logger.Error(
+				"error in API call to weather union",
+				"station",
+				station.LocalityID,
+				"error",
+				err.Error(),
 			)
-			mutex.Unlock()
+		}
+		// append new measurements to corresponding slices
+		sliceMeasurementsWeatherUnion = append(
+			sliceMeasurementsWeatherUnion,
+			measurementWeatherUnion,
+		)
 
-			// return nil if okay
-			return nil
-		})
-	}
+		// carry out API call to open weather map
+		measurementOpenWeatherMap, err :=
+			app.models.OpenWeatherMap.CallAPIOpenWeatherMap(
+				app.config.Environment.URLBaseOpenWeatherMap,
+				app.config.Environment.APIKeyOpenWeatherMap,
+				&station,
+				runID,
+			)
+		if err != nil {
+			// log error
+			// do not return
+			app.config.Logger.Error(
+				"error in API call to open weather map",
+				"station",
+				station.LocalityID,
+				"error",
+				err.Error(),
+			)
+		}
+		// append new measurements to corresponding slices
+		sliceMeasurementsOpenWeatherMap = append(
+			sliceMeasurementsOpenWeatherMap,
+			measurementOpenWeatherMap,
+		)
 
-	// wait until all goroutines are completed
-	// return the first non-nil error
-	if err := wgMeasurements.Wait(); err != nil {
-		// do not return an error here
-		// as we want to continue the flag setting for those that
-		// have been processed
-		app.config.Logger.Error(err.Error())
+		// slow down subsequent requests
+		time.Sleep(10 * time.Millisecond)
 	}
 
 	// log the count of measurements received from weather union
