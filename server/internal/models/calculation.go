@@ -369,7 +369,8 @@ func (model CalculationModel) GetCalculationsTemperatureWithStationDetails(
 		FROM measurement_runs
 		ORDER BY time_stamp DESC
 		LIMIT 1
-	);
+	)
+	ORDER BY temperature_wet_bulb DESC;
 	`
 
 	// create a 5 second timeout context
