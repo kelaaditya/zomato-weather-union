@@ -19,7 +19,7 @@ const dataProcessed = data.map((element) => {
 let information = document.getElementById("information")
 information.textContent = `
     Showing ${dataProcessed.length} measurements below.\n
-    The time of calculation of this run was approximately ${dataProcessed[0].time_string} (DD-MM-YYYY).
+    The time of calculation of this run was approximately ${dataProcessed[0].time_string} IST (DD-MM-YYYY).
 `
 
 //
@@ -71,7 +71,7 @@ function displayDataAsCircles(dataArray) {
             <div>
                 <strong>Locality Name:</strong> ${locality_name}<br/>
                 <strong>Locality ID:</strong> ${locality_id}<br/>
-                <strong>Wet Bulb Temperature:</strong> ${temperature_wet_bulb}<br/>
+                <strong>Wet Bulb Temperature:</strong> ${temperature_wet_bulb}°C<br/>
                 <strong>Time:</strong> ${time_string}
             </div>`;
 
