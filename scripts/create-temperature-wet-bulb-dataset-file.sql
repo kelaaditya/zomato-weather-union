@@ -1,0 +1,29 @@
+-- \COPY (
+--     SELECT
+--         ct.calculation_id,
+--         ct.method                       AS calculation_method,
+--         ct.temperature_dew_point        AS calculated_temperature_dew_point,
+--         ct.temperature_wet_bulb         AS calculated_temperature_wet_bulb,
+--         mwu.measurement_id,
+--         mwu.run_id                      AS measurement_run_id,
+--         wus.city_name                   AS weather_union_station_city_name,
+--         wus.locality_name               AS weather_union_station_locality_name,
+--         wus.locality_id                 AS weather_union_station_locality_id,
+--         ST_X(wus.location::geometry)    AS weather_union_station_longitude,
+--         ST_Y(wus.location::geometry)    AS weather_union_station_latitude,
+--         mwu.temperature                 AS weather_union_station_temperature,
+--         mwu.humidity                    AS weather_union_station_humidity,
+--         mwu.wind_speed                  AS weather_union_station_wind_speed,
+--         mwu.wind_direction              AS weather_union_station_wind_direction,
+--         mwu.rain_intensity              AS weather_union_station_rain_intensity,
+--         mwu.rain_accumulation           AS weather_union_station_rain_accumulation,
+--         mwu.time_stamp                  AS measurement_time_stamp
+--     FROM calculations_temperature ct
+--     JOIN measurements_weather_union mwu
+--         ON mwu.measurement_id = ct.measurement_id_weather_union
+--     JOIN weather_union_stations wus
+--         ON wus.weather_station_id = mwu.weather_station_id
+--     ORDER BY mwu.time_stamp DESC
+-- )
+-- TO '/location/of/data/folder/data.csv'
+-- WITH (FORMAT CSV, HEADER);

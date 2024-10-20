@@ -8,3 +8,6 @@ env-python3/
 # build/executables
 /bin/web
 /bin/cron
+
+# downloads
+downloads/*.csv

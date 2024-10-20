@@ -90,11 +90,17 @@ func main() {
 	//
 	// create new HTTP multiplexer
 	mux := http.NewServeMux()
-	// handlers
+
 	// static file server for the local file system
-	var fileServer http.Handler = http.FileServer(http.Dir("./ui/static/"))
+	var fileServerUI http.Handler = http.FileServer(http.Dir("./ui/static/"))
 	// handle req
-	mux.Handle("GET /static/", http.StripPrefix("/static", fileServer))
+	mux.Handle("GET /static/", http.StripPrefix("/static", fileServerUI))
+
+	// static file server for the data files
+	var fileServerDownloads http.Handler = http.FileServer(http.Dir("./downloads"))
+	// handle req
+	mux.Handle("GET /downloads/", http.StripPrefix("/downloads", fileServerDownloads))
+
 	// attaching the home handler to the mux
 	// restrict subtree paths using `${1}`
 	mux.HandleFunc("GET /{$}", app.handlers.Home())
