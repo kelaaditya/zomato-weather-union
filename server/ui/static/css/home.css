@@ -5,19 +5,54 @@
     margin-left: auto;
     margin-right: auto;
     margin-top: 20px;
-    margin-bottom: 10px;
+    margin-bottom: 20px;
     width: 1200px;
     max-width: calc(100% - 2rem);
     text-align: left;
     font-size: 18px;
 }
+
+/*
+ * colour-bar (inside the map-legend)
+ */
+#map-legend {
+    margin-left: auto;
+    margin-right: auto;
+    width: 1200px;
+    max-width: calc(100% - 2rem);
+}
+
+#map-legend ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    overflow-x: auto;
+    background-color: white;
+    border-radius: 0;
+}
+#map-legend li {
+    text-align: center;
+    padding: 0;
+    margin: 0;
+}
+.colour-box {
+    margin-bottom: 4px;
+    width: 57.14px;
+    height: 50px;
+}
+.colour-box-item-value {
+    text-align: center;
+    font-size: 15px;
+}
+
 /*
  * leaflet map (open street maps)
  */
 #map {
     margin-left: auto;
     margin-right: auto;
-    margin-top: 10px;
+    margin-top: 12px;
     height: calc(100vh - 175px);
     width: 1200px;
     max-width: calc(100% - 2rem);
