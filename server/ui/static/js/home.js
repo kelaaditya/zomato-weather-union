@@ -5,7 +5,7 @@
 const dataProcessed = data.map((element) => {
     // convert timestamp from server to locale string
     const timeOfCalculation = new Date(element.time_stamp_calculation)
-    const timeString = timeOfCalculation.toLocaleString()
+    const timeString = timeOfCalculation.toLocaleString("en-IN", { "hour12": false })
 
     // append new time string to data element
     element.time_string = timeString
