@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"path"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,6 +50,7 @@ type CalculationTemperatureWithStationDetails struct {
 // run the python script from the fetched
 // data of one instance
 func (model CalculationModel) CalculateTemperatureFromSingleMeasurement(
+	pathToPythonEnvironment string,
 	measurement MeasurementTemperature,
 ) (CalculationTemperature, error) {
 	// initialize calculationID as UUID for this calculation
@@ -56,6 +58,10 @@ func (model CalculationModel) CalculateTemperatureFromSingleMeasurement(
 	if err != nil {
 		return CalculationTemperature{}, err
 	}
+
+	// join path of python environment along with the python3
+	// executable
+	environmentBinary := path.Join(pathToPythonEnvironment, "python3")
 
 	// placeholder for temperature struct
 	var temperature Temperature
@@ -69,7 +75,7 @@ func (model CalculationModel) CalculateTemperatureFromSingleMeasurement(
 	// to debug the command, do this
 	// fmt.Println(command.String())
 	command := exec.Command(
-		"python3",
+		environmentBinary,
 		"../scripts/wet_bulb_temperature.py",
 		CLATemperature,
 		CLAHumidity,

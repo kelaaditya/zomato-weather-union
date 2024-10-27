@@ -8,12 +8,13 @@ import (
 )
 
 type Environment struct {
-	Port                  string
-	DatabaseURL           string
-	URLBaseWeatherUnion   string
-	URLBaseOpenWeatherMap string
-	APIKeyWeatherUnion    string
-	APIKeyOpenWeatherMap  string
+	Port                    string
+	DatabaseURL             string
+	URLBaseWeatherUnion     string
+	URLBaseOpenWeatherMap   string
+	APIKeyWeatherUnion      string
+	APIKeyOpenWeatherMap    string
+	PathToPythonEnvironment string
 }
 
 // load environment variable values
@@ -35,6 +36,7 @@ func (config *Config) initializeEnvironment() error {
 	newEnvironment.URLBaseOpenWeatherMap = os.Getenv("URL_BASE_OPEN_WEATHER_MAP")
 	newEnvironment.APIKeyWeatherUnion = os.Getenv("API_KEY_WEATHER_UNION")
 	newEnvironment.APIKeyOpenWeatherMap = os.Getenv("API_KEY_OPEN_WEATHER_MAP")
+	newEnvironment.PathToPythonEnvironment = os.Getenv("PATH_TO_PYTHON_ENVIRONMENT")
 
 	// configured environment variables struct
 	config.Environment = &newEnvironment

@@ -51,6 +51,7 @@ func main() {
 		Calculation:    &models.CalculationModel{DB: app.config.DB},
 	}
 
+	// get the measurements from the APIs
 	err = app.GetAndSaveMeasurementsFromAPISingleRun(ctx)
 	if err != nil {
 		app.config.Logger.Error(err.Error())
@@ -58,6 +59,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	// calculate the wet bulb temperatures
 	err = app.CalculateAndSaveTemperaturesAllUnprocessed(ctx)
 	if err != nil {
 		app.config.Logger.Error(err.Error())
@@ -219,6 +221,7 @@ func (app *application) CalculateAndSaveTemperaturesAllUnprocessed(
 			// carry out calculations over a single measurement
 			calculation, err :=
 				app.models.Calculation.CalculateTemperatureFromSingleMeasurement(
+					app.config.Environment.PathToPythonEnvironment,
 					measurement,
 				)
 			if err != nil {
