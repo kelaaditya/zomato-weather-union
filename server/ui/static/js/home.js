@@ -4,23 +4,29 @@
 // 'data' variable is loaded with data fetched from the server
 const dataProcessed = data.map((element) => {
     // convert timestamp from server to locale string
-    const timeOfCalculation = new Date(element.time_stamp_calculation)
-    const timeString = timeOfCalculation.toLocaleString("en-IN", { "hour12": false })
+    const timeOfCalculation = new Date(element.time_stamp_calculation);
+    const timeString = timeOfCalculation.toLocaleString(
+        "en-IN",
+        {
+            "timeZone": "Asia/Kolkata",
+            "hour12": false
+        }
+    );
 
     // append new time string to data element
-    element.time_string = timeString
+    element.time_string = timeString;
 
-    return element
+    return element;
 });
 
 //
 // information
 //
-let information = document.getElementById("information")
+let information = document.getElementById("information");
 information.textContent = `
     Showing ${dataProcessed.length} measurements below.\n
     The time of calculation of this run was approximately ${dataProcessed[0].time_string} IST (DD-MM-YYYY).
-`
+`;
 
 //
 // colour bar
@@ -60,7 +66,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 // run the circle display function for the map
-displayDataAsCircles(dataProcessed)
+displayDataAsCircles(dataProcessed);
 
 // function to set up measurements as circles via Leaflet
 function displayDataAsCircles(dataArray) {
@@ -105,25 +111,11 @@ function displayDataAsCircles(dataArray) {
             // openPopup = circleMarker;
         });
     }
-}
+};
 
 // function to get colour values (rgb) for temperature values
 // 20 is green, 30 is yellow and 40 is red.
 // with a gradient in the middle
-function getGradientColor(value) {
-    const normalizedValue = (value - 20) / 20; // Normalize to 0-1 range
-    if (normalizedValue <= 0.5) {
-        // Green to Yellow
-        const green = 255;
-        const red = Math.round(normalizedValue * 2 * 255);
-        return `rgb(${red}, ${green}, 0)`;
-    } else {
-        // Yellow to Red
-        const red = 255;
-        const green = Math.round((1 - (normalizedValue - 0.5) * 2) * 255);
-        return `rgb(${red}, ${green}, 0)`;
-    }
-}
 function getGradientColor(value) {
     // normalize to 0-1 range
     const normalizedValue = (value - 20) / 20;
@@ -146,7 +138,7 @@ function getGradientColor(value) {
     }
 
     return `rgb(${r}, ${g}, ${b})`;
-}
+};
 
 // function getGradientColor(value) {
 //     if (value <= 20) return "rgb(0, 255, 0)";
